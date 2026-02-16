@@ -2,83 +2,112 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Professional Production Dashboard</title>
+<title>Production Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f3f4f6;
-}
-.header {
-  background: #111827;
-  color: white;
-  padding: 18px;
-  font-size: 22px;
-  font-weight: bold;
-  text-align: center;
-}
-.container {
-  padding: 20px;
-}
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
-  margin-bottom: 25px;
-}
-.card {
-  background: white;
-  padding: 18px;
-  border-radius: 10px;
-  color: #111;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-  text-align: center;
-}
-.card h4 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: #555;
-}
-.card h2 {
-  margin: 6px 0 0;
-  font-size: 24px;
-  font-weight: 700;
-}
-.blue   { background: #2563eb; color: white; }
-.green  { background: #16a34a; color: white; }
-.teal   { background: #0ea5e9; color: white; }
-.purple { background: #7c3aed; color: white; }
-.orange { background: #f97316; color: white; }
-.red    { background: #dc2626; color: white; }
-.brown  { background: #92400e; color: white; }
-.pink   { background: #db2777; color: white; }
 
-.table-container {
-  background: white;
-  border-radius: 10px;
-  overflow: auto;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+body{
+  margin:0;
+  font-family:Segoe UI;
+  background:#eef2f7;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+
+/* HEADER */
+.header{
+  background:#0f172a;
+  color:white;
+  padding:18px;
+  font-size:22px;
+  font-weight:600;
+  text-align:center;
 }
-th {
-  background: #111827;
-  color: white;
-  padding: 10px;
-  position: sticky;
-  top: 0;
+
+/* SEARCH BAR */
+.search-box{
+  text-align:right;
+  margin-bottom:15px;
 }
-td {
-  padding: 8px;
-  text-align: center;
-  border-bottom: 1px solid #eee;
+.search-box input{
+  padding:8px 12px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  width:220px;
 }
+
+/* CARDS */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:15px;
+  margin-bottom:25px;
+}
+
+.card{
+  padding:20px;
+  border-radius:14px;
+  color:white;
+  box-shadow:0 6px 18px rgba(0,0,0,0.15);
+  transition:0.3s;
+}
+.card:hover{
+  transform:translateY(-4px);
+}
+
+.card h4{
+  margin:0;
+  font-size:13px;
+  opacity:0.9;
+}
+.card h2{
+  margin:8px 0 0;
+  font-size:24px;
+  font-weight:700;
+}
+
+/* Gradient Colors */
+.blue{background:linear-gradient(135deg,#2563eb,#1e40af);}
+.green{background:linear-gradient(135deg,#16a34a,#065f46);}
+.orange{background:linear-gradient(135deg,#f97316,#c2410c);}
+.red{background:linear-gradient(135deg,#dc2626,#7f1d1d);}
+.purple{background:linear-gradient(135deg,#7c3aed,#4c1d95);}
+.teal{background:linear-gradient(135deg,#0ea5e9,#155e75);}
+.pink{background:linear-gradient(135deg,#db2777,#831843);}
+.brown{background:linear-gradient(135deg,#92400e,#451a03);}
+.dark{background:linear-gradient(135deg,#111827,#000000);}
+
+/* TABLE */
+.table-container{
+  background:white;
+  border-radius:12px;
+  overflow:auto;
+  box-shadow:0 6px 18px rgba(0,0,0,0.1);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+th{
+  background:#0f172a;
+  color:white;
+  padding:10px;
+  position:sticky;
+  top:0;
+}
+
+td{
+  padding:8px;
+  text-align:center;
+  border-bottom:1px solid #eee;
+}
+
+tr:nth-child(even){
+  background:#f9fafb;
+}
+
 </style>
 </head>
 
@@ -86,7 +115,11 @@ td {
 
 <div class="header">Production Dashboard</div>
 
-<div class="container">
+<div style="padding:20px;">
+
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Search...">
+</div>
 
 <div class="cards">
   <div class="card blue"><h4>PO Qty</h4><h2 id="poQty">0</h2></div>
@@ -96,27 +129,43 @@ td {
   <div class="card orange"><h4>Packed</h4><h2 id="packedQty">0</h2></div>
   <div class="card pink"><h4>Gpt+Cat+Sam</h4><h2 id="gcsQty">0</h2></div>
   <div class="card red"><h4>Rejection</h4><h2 id="rejQty">0</h2></div>
-  <div class="card orange"><h4>Excess</h4><h2 id="excessQty">0</h2></div>
-  <div class="card brown"><h4>Po Pending</h4><h2 id="poPendQty">0</h2></div>
+  <div class="card brown"><h4>PO Pending</h4><h2 id="poPendQty">0</h2></div>
   <div class="card teal"><h4>Cut Pending</h4><h2 id="cutPendQty">0</h2></div>
   <div class="card green"><h4>GRN Qty</h4><h2 id="grnQty">0</h2></div>
   <div class="card pink"><h4>Amm Qty</h4><h2 id="ammQty">0</h2></div>
   <div class="card red"><h4>Short Qty</h4><h2 id="shortQty">0</h2></div>
   <div class="card purple"><h4>QC Fail Qty</h4><h2 id="qcQty">0</h2></div>
+  <div class="card dark"><h4>Total Amount</h4><h2 id="totalAmount">0</h2></div>
 </div>
 
 <div class="table-container">
 <table id="dataTable">
-  <thead>
-  <tr>
-    <th>Job Card No</th><th>Brand Name</th><th>Vendor Article Number</th>
-    <th>Po Qty</th><th>Cut Qty</th><th>Line Qty</th><th>Finished Qty</th><th>Packed</th>
-    <th>Gpt+Cat+Sam</th><th>Rejection</th><th>Excess</th><th>Po Pendng</th>
-    <th>Cut Pending</th><th>Grn Qty</th><th>Amm Qty</th><th>Short Qty</th>
-    <th>Qc Fail Qty</th><th>Qty Received Date</th><th>Remark</th><th>Rate</th><th>Amount</th>
-  </tr>
-  </thead>
-  <tbody></tbody>
+<thead>
+<tr>
+<th>Job Card No</th>
+<th>Brand Name</th>
+<th>Vendor Article Number</th>
+<th>Po Qty</th>
+<th>Cut Qty</th>
+<th>Line Qty</th>
+<th>Finished Qty</th>
+<th>Packed</th>
+<th>Gpt+Cat+Sam</th>
+<th>Rejection</th>
+<th>Excess</th>
+<th>Po Pendng</th>
+<th>Cut Pending</th>
+<th>Grn Qty</th>
+<th>Amm Qty</th>
+<th>Short Qty</th>
+<th>Qc Fail Qty</th>
+<th>Qty Received Date</th>
+<th>Remark</th>
+<th>Rate</th>
+<th>Amount</th>
+</tr>
+</thead>
+<tbody></tbody>
 </table>
 </div>
 
@@ -126,86 +175,68 @@ td {
 
 const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?output=csv";
 
-Papa.parse(sheetURL, {
-    download: true,
-    header: true,
-    complete: function(results) {
+Papa.parse(sheetURL,{
+ download:true,
+ header:true,
+ complete:function(results){
 
-        let data = results.data;
-        let totals = {
-            po:0, cut:0, line:0, fin:0, packed:0,
-            gcs:0, rej:0, excess:0, poPend:0,
-            cutPend:0, grn:0, amm:0, short:0, qc:0
-        };
+   let data = results.data;
+   let totals = {po:0,cut:0,line:0,fin:0,packed:0,gcs:0,rej:0,poPend:0,cutPend:0,grn:0,amm:0,short:0,qc:0,amount:0};
 
-        let tbody = document.querySelector("#dataTable tbody");
-        tbody.innerHTML="";
+   let tbody=document.querySelector("#dataTable tbody");
+   tbody.innerHTML="";
 
-        data.forEach(row => {
-            // skip empty row
-            if(!row["Job Card No"]) return;
+   data.forEach(row=>{
+     if(!row["Job Card No"]) return;
 
-            let tr = "<tr>";
-            tr += "<td>"+row["Job Card No"]+"</td>";
-            tr += "<td>"+row["Brand Name"]+"</td>";
-            tr += "<td>"+row["Vendor Article Number"]+"</td>";
-            tr += "<td>"+row["Po Qty"]+"</td>";
-            tr += "<td>"+row["Cut Qty"]+"</td>";
-            tr += "<td>"+row["Line Qty"]+"</td>";
-            tr += "<td>"+row["Finished Qty"]+"</td>";
-            tr += "<td>"+row["Packed"]+"</td>";
-            tr += "<td>"+row["Gpt+Cat+Sam"]+"</td>";
-            tr += "<td>"+row["Rejection"]+"</td>";
-            tr += "<td>"+row["Excess"]+"</td>";
-            tr += "<td>"+row["Po Pendng"]+"</td>";
-            tr += "<td>"+row["Cut Pending"]+"</td>";
-            tr += "<td>"+row["Grn Qty"]+"</td>";
-            tr += "<td>"+row["Amm Qty"]+"</td>";
-            tr += "<td>"+row["Short Qty"]+"</td>";
-            tr += "<td>"+row["Qc Fail Qty"]+"</td>";
-            tr += "<td>"+row["Qty Received Date"]+"</td>";
-            tr += "<td>"+row["Remark"]+"</td>";
-            tr += "<td>"+row["Rate"]+"</td>";
-            tr += "<td>"+row["Amount"]+"</td>";
-            tr += "</tr>";
+     let tr="<tr>";
+     for(let key in row){
+       tr+="<td>"+row[key]+"</td>";
+     }
+     tr+="</tr>";
+     tbody.innerHTML+=tr;
 
-            tbody.innerHTML += tr;
+     totals.po+=Number(row["Po Qty"])||0;
+     totals.cut+=Number(row["Cut Qty"])||0;
+     totals.line+=Number(row["Line Qty"])||0;
+     totals.fin+=Number(row["Finished Qty"])||0;
+     totals.packed+=Number(row["Packed"])||0;
+     totals.gcs+=Number(row["Gpt+Cat+Sam"])||0;
+     totals.rej+=Number(row["Rejection"])||0;
+     totals.poPend+=Number(row["Po Pendng"])||0;
+     totals.cutPend+=Number(row["Cut Pending"])||0;
+     totals.grn+=Number(row["Grn Qty"])||0;
+     totals.amm+=Number(row["Amm Qty"])||0;
+     totals.short+=Number(row["Short Qty"])||0;
+     totals.qc+=Number(row["Qc Fail Qty"])||0;
+     totals.amount+=Number(row["Amount"])||0;
+   });
 
-            // sum totals
-            totals.po += Number(row["Po Qty"])||0;
-            totals.cut += Number(row["Cut Qty"])||0;
-            totals.line += Number(row["Line Qty"])||0;
-            totals.fin += Number(row["Finished Qty"])||0;
-            totals.packed += Number(row["Packed"])||0;
-            totals.gcs += Number(row["Gpt+Cat+Sam"])||0;
-            totals.rej += Number(row["Rejection"])||0;
-            totals.excess += Number(row["Excess"])||0;
-            totals.poPend += Number(row["Po Pendng"])||0;
-            totals.cutPend += Number(row["Cut Pending"])||0;
-            totals.grn += Number(row["Grn Qty"])||0;
-            totals.amm += Number(row["Amm Qty"])||0;
-            totals.short += Number(row["Short Qty"])||0;
-            totals.qc += Number(row["Qc Fail Qty"])||0;
+   document.getElementById("poQty").innerText=totals.po;
+   document.getElementById("cutQty").innerText=totals.cut;
+   document.getElementById("lineQty").innerText=totals.line;
+   document.getElementById("finQty").innerText=totals.fin;
+   document.getElementById("packedQty").innerText=totals.packed;
+   document.getElementById("gcsQty").innerText=totals.gcs;
+   document.getElementById("rejQty").innerText=totals.rej;
+   document.getElementById("poPendQty").innerText=totals.poPend;
+   document.getElementById("cutPendQty").innerText=totals.cutPend;
+   document.getElementById("grnQty").innerText=totals.grn;
+   document.getElementById("ammQty").innerText=totals.amm;
+   document.getElementById("shortQty").innerText=totals.short;
+   document.getElementById("qcQty").innerText=totals.qc;
+   document.getElementById("totalAmount").innerText=totals.amount;
 
-        });
+ }
+});
 
-        // display totals
-        document.getElementById("poQty").innerText = totals.po;
-        document.getElementById("cutQty").innerText = totals.cut;
-        document.getElementById("lineQty").innerText = totals.line;
-        document.getElementById("finQty").innerText = totals.fin;
-        document.getElementById("packedQty").innerText = totals.packed;
-        document.getElementById("gcsQty").innerText = totals.gcs;
-        document.getElementById("rejQty").innerText = totals.rej;
-        document.getElementById("excessQty").innerText = totals.excess;
-        document.getElementById("poPendQty").innerText = totals.poPend;
-        document.getElementById("cutPendQty").innerText = totals.cutPend;
-        document.getElementById("grnQty").innerText = totals.grn;
-        document.getElementById("ammQty").innerText = totals.amm;
-        document.getElementById("shortQty").innerText = totals.short;
-        document.getElementById("qcQty").innerText = totals.qc;
-
-    }
+// SEARCH FILTER
+document.getElementById("searchInput").addEventListener("keyup",function(){
+ let filter=this.value.toLowerCase();
+ let rows=document.querySelectorAll("#dataTable tbody tr");
+ rows.forEach(row=>{
+   row.style.display=row.innerText.toLowerCase().includes(filter)?"":"none";
+ });
 });
 
 </script>
