@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <title>Gee Impex Live Production Dashboard</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#eef2f7;}
@@ -20,7 +22,7 @@ body{margin:0;font-family:Segoe UI;background:#eef2f7;}
 .header{
 background:#000;
 color:white;
-padding:12px;
+padding:14px;
 text-align:center;
 position:relative;
 }
@@ -30,42 +32,25 @@ position:relative;
 .clock{
 position:absolute;
 right:20px;
-top:15px;
-font-size:14px;
+top:18px;
+font-size:13px;
 }
 
 .container{padding:15px;}
 
-.top-bar{
-display:flex;
-justify-content:flex-end;
-gap:10px;
-margin-bottom:15px;
-flex-wrap:wrap;
-}
-
-button{
-padding:6px 12px;
-border:none;
-border-radius:6px;
-background:#111827;
-color:white;
-cursor:pointer;
-}
-
 .cards{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
 gap:12px;
 margin-bottom:20px;
 }
 
 .card{
-padding:15px;
+padding:14px;
 border-radius:10px;
 color:white;
 text-align:center;
-box-shadow:0 4px 10px rgba(0,0,0,0.2);
+box-shadow:0 4px 12px rgba(0,0,0,0.2);
 }
 
 .card h4{margin:0;font-size:12px;}
@@ -87,13 +72,25 @@ margin-top:20px;
 font-size:13px;
 }
 
-table.dataTable thead{
-background:black;
+table.dataTable thead th{
+background:#000;
 color:white;
+position:relative;
+}
+
+.filter-icon{
+cursor:pointer;
+font-size:12px;
+margin-left:5px;
+color:#ffc107;
+}
+
+.dataTables_wrapper .dataTables_filter{
+display:none; /* Hide global search */
 }
 
 @media print{
-.top-bar,.clock,.dataTables_filter,.dataTables_length,.dataTables_paginate{display:none;}
+.clock,.dt-buttons,.dataTables_length,.dataTables_paginate{display:none;}
 }
 </style>
 </head>
@@ -107,14 +104,9 @@ color:white;
 
 <div class="container">
 
-<div class="top-bar">
-<button onclick="exportToExcel()">Export Excel</button>
-<button onclick="window.print()">Print</button>
-</div>
-
 <div class="cards" id="cardsContainer"></div>
 
-<table id="dataTable" class="display" style="width:100%"></table>
+<table id="dataTable" class="display nowrap" style="width:100%"></table>
 
 </div>
 
@@ -126,9 +118,8 @@ Created by: Vijay Pandey
 
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let fullData=[];
-let numericColumns=[];
 let table;
+let numericColumns=[];
 
 /* CLOCK */
 function updateClock(){
@@ -147,30 +138,34 @@ header:true,
 skipEmptyLines:true,
 complete:function(res){
 
-fullData=res.data.filter(r=>Object.values(r).some(v=>v));
+let data=res.data.filter(r=>Object.values(r).some(v=>v));
+if(data.length==0) return;
 
-if(fullData.length==0) return;
-
-let headers=Object.keys(fullData[0]);
+let headers=Object.keys(data[0]);
 
 numericColumns=headers.filter(h=>{
-if(h.toLowerCase()=="rate") return false;   // RATE BOX REMOVE
-return fullData.some(r=>!isNaN(parseFloat(r[h])));
+if(h.toLowerCase()=="rate") return false;
+return data.some(r=>!isNaN(parseFloat(r[h])));
 });
 
 createCards(headers);
 
 if(table){
-table.clear().rows.add(fullData).draw();
+table.clear().rows.add(data).draw();
 }else{
 table=$('#dataTable').DataTable({
-data:fullData,
+data:data,
 columns:headers.map(h=>({title:h,data:h})),
-destroy:true
+scrollX:true,
+dom:'Bfrtip',
+buttons:['excel','print'],
+initComplete:function(){
+addColumnFilters(this.api());
+}
 });
 }
 
-updateCards();
+updateCards(table.rows({search:'applied'}).data().toArray());
 }
 });
 }
@@ -178,12 +173,10 @@ updateCards();
 loadData();
 setInterval(loadData,60000);
 
-/* CARDS */
+/* KPI CARDS */
 function createCards(headers){
-
 let container=document.getElementById("cardsContainer");
 container.innerHTML="";
-
 numericColumns.forEach((col,i)=>{
 let div=document.createElement("div");
 div.className="card color"+(i%6);
@@ -192,25 +185,43 @@ container.appendChild(div);
 });
 }
 
-function updateCards(){
-
+function updateCards(data){
 numericColumns.forEach(col=>{
 let total=0;
-fullData.forEach(r=>{
+data.forEach(r=>{
 let num=parseFloat(r[col]);
 if(!isNaN(num)) total+=num;
 });
-let el=document.getElementById("kpi_"+col);
-if(el) el.innerText=total;
+document.getElementById("kpi_"+col).innerText=total;
 });
 }
 
-/* EXPORT */
-function exportToExcel(){
-let ws=XLSX.utils.json_to_sheet(fullData);
-let wb=XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb,ws,"Dashboard");
-XLSX.writeFile(wb,"Gee_Impex_Dashboard.xlsx");
+/* COLUMN FILTER */
+function addColumnFilters(api){
+api.columns().every(function(){
+let column=this;
+let header=$(column.header());
+
+let icon=$('<span class="filter-icon">⏷</span>');
+header.append(icon);
+
+icon.on('click',function(e){
+e.stopPropagation();
+
+let select=$('<select multiple style="width:150px;"></select>')
+.appendTo(header)
+.on('change',function(){
+let vals=$(this).val();
+let search=vals ? vals.join('|') : '';
+column.search(search,true,false).draw();
+updateCards(api.rows({search:'applied'}).data().toArray());
+});
+
+column.data().unique().sort().each(function(d){
+select.append('<option value="'+d+'">'+d+'</option>');
+});
+});
+});
 }
 
 </script>
