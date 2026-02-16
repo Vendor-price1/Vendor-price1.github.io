@@ -22,29 +22,20 @@ print-color-adjust: exact;
 .header{
 background:#000;
 color:white;
-padding:12px 20px;
-display:flex;
-align-items:center;
-justify-content:space-between;
-flex-wrap:wrap;
-}
-
-.header-left{
-display:flex;
-align-items:center;
-gap:15px;
-}
-
-.logo{
-height:45px;
+padding:12px;
+text-align:center;
+position:relative;
 }
 
 .title{
-font-size:20px;
+font-size:22px;
 font-weight:600;
 }
 
 .clock{
+position:absolute;
+right:20px;
+top:15px;
 font-size:14px;
 }
 
@@ -53,19 +44,13 @@ font-size:14px;
 padding:15px;
 }
 
-/* TOP BAR */
+/* BUTTON BAR */
 .top-bar{
 display:flex;
 justify-content:space-between;
 flex-wrap:wrap;
 gap:10px;
 margin-bottom:15px;
-}
-
-input{
-padding:6px 10px;
-border-radius:6px;
-border:1px solid #ccc;
 }
 
 button{
@@ -109,6 +94,7 @@ background:white;
 border-radius:10px;
 overflow:auto;
 box-shadow:0 5px 15px rgba(0,0,0,0.1);
+position:relative;
 }
 
 table{
@@ -125,6 +111,7 @@ padding:8px;
 text-align:center;
 position:sticky;
 top:0;
+cursor:pointer;
 }
 
 td{
@@ -137,6 +124,23 @@ tr:nth-child(even){
 background:#f9fafb;
 }
 
+/* FILTER DROPDOWN */
+.filter-box{
+position:absolute;
+background:white;
+border:1px solid #ccc;
+max-height:200px;
+overflow:auto;
+z-index:1000;
+padding:8px;
+display:none;
+font-size:12px;
+}
+
+.filter-box label{
+display:block;
+}
+
 /* FOOTER */
 .footer{
 background:#000;
@@ -147,21 +151,9 @@ margin-top:20px;
 font-size:13px;
 }
 
-/* MOBILE */
-@media(max-width:768px){
-.title{
-font-size:16px;
-}
-.logo{
-height:35px;
-}
-}
-
 /* PRINT */
 @media print{
-.top-bar{display:none;}
-.clock{display:none;}
-button{display:none;}
+.top-bar,.clock,.filter-box,button{display:none;}
 }
 </style>
 </head>
@@ -169,17 +161,13 @@ button{display:none;}
 <body>
 
 <div class="header">
-<div class="header-left">
-<img src="logo.png" class="logo">
 <div class="title">Gee Impex Live Production Dashboard</div>
-</div>
 <div class="clock" id="clock"></div>
 </div>
 
 <div class="container">
 
 <div class="top-bar">
-<input type="text" id="searchInput" placeholder="Search...">
 <div>
 <button onclick="exportToExcel()">Export Excel</button>
 <button onclick="window.print()">Print</button>
@@ -193,6 +181,7 @@ button{display:none;}
 <thead><tr id="headerRow"></tr></thead>
 <tbody></tbody>
 </table>
+<div id="filterBox" class="filter-box"></div>
 </div>
 
 </div>
@@ -207,9 +196,10 @@ const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa
 
 let fullData=[];
 let headers=[];
+let activeFilters={};
 let filteredData=[];
 
-/* LIVE CLOCK */
+/* CLOCK */
 function updateClock(){
 let now=new Date();
 document.getElementById("clock").innerText=
@@ -225,88 +215,92 @@ download:true,
 header:true,
 skipEmptyLines:true,
 complete:function(results){
-
 fullData=results.data.filter(row=>{
 return Object.values(row).some(v=>v && v.trim()!=="");
 });
-
-if(fullData.length===0){
-alert("No Data Found");
-return;
-}
-
 headers=Object.keys(fullData[0]);
-
 createHeaders();
 createCards();
 applyFilters();
 }
 });
 }
-
 loadData();
-
-/* AUTO REFRESH 1 MIN */
 setInterval(loadData,60000);
 
+/* HEADERS WITH FILTER */
 function createHeaders(){
 let headerRow=document.getElementById("headerRow");
 headerRow.innerHTML="";
+
 headers.forEach(h=>{
 let th=document.createElement("th");
-th.innerText=h;
+th.innerHTML=h+" ⏷";
+th.onclick=(e)=>openFilter(e,h);
 headerRow.appendChild(th);
 });
 }
 
-function createCards(){
+function openFilter(event,column){
 
-let kpiColumns=[
-"Po Qty","Cut Qty","Line Qty","Finished Qty","Packed",
-"Gpt+Cat+Sam","Rejection","Excess","Po Pendng",
-"Cut Pending","Grn Qty","Amm Qty","Short Qty",
-"Qc Fail Qty","Amount"
-];
+let filterBox=document.getElementById("filterBox");
+filterBox.innerHTML="";
 
-let colors=["blue","green","purple","orange","red",
-"purple","red","orange","green",
-"blue","purple","orange","red",
-"green","dark"];
+let values=[...new Set(fullData.map(r=>r[column]))];
 
-let container=document.getElementById("cardsContainer");
-container.innerHTML="";
-
-kpiColumns.forEach((col,i)=>{
-let div=document.createElement("div");
-div.className="card "+colors[i];
-div.innerHTML=`<h4>${col}</h4><h2 id="${col.replace(/\s/g,'')}">0</h2>`;
-container.appendChild(div);
+values.forEach(val=>{
+let label=document.createElement("label");
+let checked=activeFilters[column]?.includes(val)?"checked":"";
+label.innerHTML=`<input type="checkbox" value="${val}" ${checked}> ${val}`;
+filterBox.appendChild(label);
 });
+
+let btn=document.createElement("button");
+btn.innerText="Apply";
+btn.style.marginTop="5px";
+btn.onclick=function(){
+let checked=[...filterBox.querySelectorAll("input:checked")].map(i=>i.value);
+activeFilters[column]=checked;
+filterBox.style.display="none";
+applyFilters();
+};
+filterBox.appendChild(btn);
+
+filterBox.style.display="block";
+filterBox.style.left=event.pageX+"px";
+filterBox.style.top=event.pageY+"px";
 }
 
+/* APPLY FILTERS */
+function applyFilters(){
+
+let data=fullData.filter(row=>{
+return Object.keys(activeFilters).every(col=>{
+if(!activeFilters[col]||activeFilters[col].length===0) return true;
+return activeFilters[col].includes(row[col]);
+});
+});
+
+renderTable(data);
+}
+
+/* TABLE + TOTALS */
 function renderTable(data){
 
 filteredData=data;
 
 let tbody=document.querySelector("#dataTable tbody");
 tbody.innerHTML="";
-
 let totals={};
 
 data.forEach(row=>{
-
 let tr="<tr>";
-
 headers.forEach(h=>{
 let val=row[h]||"";
 tr+=`<td>${val}</td>`;
-
 let num=parseFloat(val);
-if(!isNaN(num)){
-totals[h]=(totals[h]||0)+num;
-}
+if(!isNaN(num)){ totals[h]=(totals[h]||0)+num; }
 });
-
 tr+="</tr>";
 tbody.innerHTML+=tr;
 });
@@ -317,25 +311,24 @@ if(el){ el.innerText=totals[key]; }
 });
 }
 
-function applyFilters(){
+/* KPI CARDS */
+function createCards(){
+let kpi=["Po Qty","Cut Qty","Line Qty","Finished Qty","Packed","Rejection","Amount"];
+let colors=["blue","green","purple","orange","red","dark","blue"];
 
-let search=document.getElementById("searchInput").value.toLowerCase();
+let container=document.getElementById("cardsContainer");
+container.innerHTML="";
 
-let filtered=fullData.filter(row=>{
-return Object.values(row)
-.join(" ")
-.toLowerCase()
-.includes(search);
+kpi.forEach((col,i)=>{
+let div=document.createElement("div");
+div.className="card "+colors[i];
+div.innerHTML=`<h4>${col}</h4><h2 id="${col.replace(/\s/g,'')}">0</h2>`;
+container.appendChild(div);
 });
-
-renderTable(filtered);
 }
 
-document.getElementById("searchInput").addEventListener("keyup",applyFilters);
-
-/* EXPORT TO EXCEL */
+/* EXPORT */
 function exportToExcel(){
-
 let ws=XLSX.utils.json_to_sheet(filteredData);
 let wb=XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb,ws,"Dashboard");
