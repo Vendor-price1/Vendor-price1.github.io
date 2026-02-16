@@ -1,260 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Production Dashboard</title>
+<title>Professional Production Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
-
-body{
-    margin:0;
-    font-family: 'Segoe UI', sans-serif;
-    background:#eef1f5;
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
 }
-
-/* HEADER */
-.header{
-    background:#1f2937;
-    color:white;
-    padding:20px 30px;
-    font-size:22px;
-    font-weight:600;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+.header {
+  background: #111827;
+  color: white;
+  padding: 18px;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
 }
-
-/* CONTAINER */
-.container{
-    padding:25px 30px;
+.container {
+  padding: 20px;
 }
-
-/* FILTER */
-.filter-section{
-    margin-bottom:20px;
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 25px;
 }
-
-select{
-    padding:8px 12px;
-    border-radius:6px;
-    border:1px solid #ccc;
-    font-size:14px;
+.card {
+  background: white;
+  padding: 18px;
+  border-radius: 10px;
+  color: #111;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  text-align: center;
 }
-
-/* CARDS */
-.cards{
-    display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
-    gap:15px;
-    margin-bottom:25px;
+.card h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
 }
-
-.card{
-    background:white;
-    padding:18px;
-    border-radius:10px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.08);
-    transition:0.3s;
+.card h2 {
+  margin: 6px 0 0;
+  font-size: 24px;
+  font-weight: 700;
 }
+.blue   { background: #2563eb; color: white; }
+.green  { background: #16a34a; color: white; }
+.teal   { background: #0ea5e9; color: white; }
+.purple { background: #7c3aed; color: white; }
+.orange { background: #f97316; color: white; }
+.red    { background: #dc2626; color: white; }
+.brown  { background: #92400e; color: white; }
+.pink   { background: #db2777; color: white; }
 
-.card:hover{
-    transform:translateY(-3px);
+.table-container {
+  background: white;
+  border-radius: 10px;
+  overflow: auto;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
-
-.card-title{
-    font-size:13px;
-    color:#666;
-    margin-bottom:8px;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
-
-.card-value{
-    font-size:22px;
-    font-weight:600;
-    color:#111827;
+th {
+  background: #111827;
+  color: white;
+  padding: 10px;
+  position: sticky;
+  top: 0;
 }
-
-/* TOTAL AMOUNT */
-.total-amount{
-    font-size:16px;
-    font-weight:600;
-    margin-bottom:20px;
+td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
 }
-
-/* TABLE */
-.table-container{
-    background:white;
-    border-radius:10px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.08);
-    overflow:auto;
-}
-
-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
-}
-
-th{
-    background:#111827;
-    color:white;
-    padding:12px;
-    position:sticky;
-    top:0;
-}
-
-td{
-    padding:10px;
-    border-bottom:1px solid #eee;
-    text-align:center;
-}
-
-tr:hover{
-    background:#f3f4f6;
-}
-
 </style>
 </head>
 
 <body>
 
-<div class="header">
-    Production Dashboard
-</div>
+<div class="header">Production Dashboard</div>
 
 <div class="container">
 
-<div class="filter-section">
-    <select id="monthFilter" onchange="filterByMonth()">
-        <option value="All">All Months</option>
-        <option value="1">January</option>
-        <option value="2">February</option>
-        <option value="3">March</option>
-        <option value="4">April</option>
-        <option value="5">May</option>
-        <option value="6">June</option>
-        <option value="7">July</option>
-        <option value="8">August</option>
-        <option value="9">September</option>
-        <option value="10">October</option>
-        <option value="11">November</option>
-        <option value="12">December</option>
-    </select>
-</div>
-
-<!-- DASHBOARD CARDS (MANUAL TOTAL ENTRY) -->
 <div class="cards">
-
-<div class="card">
-<div class="card-title">PO Qty</div>
-<div class="card-value">0</div>
+  <div class="card blue"><h4>PO Qty</h4><h2 id="poQty">0</h2></div>
+  <div class="card green"><h4>Cut Qty</h4><h2 id="cutQty">0</h2></div>
+  <div class="card teal"><h4>Line Qty</h4><h2 id="lineQty">0</h2></div>
+  <div class="card purple"><h4>Finished Qty</h4><h2 id="finQty">0</h2></div>
+  <div class="card orange"><h4>Packed</h4><h2 id="packedQty">0</h2></div>
+  <div class="card pink"><h4>Gpt+Cat+Sam</h4><h2 id="gcsQty">0</h2></div>
+  <div class="card red"><h4>Rejection</h4><h2 id="rejQty">0</h2></div>
+  <div class="card orange"><h4>Excess</h4><h2 id="excessQty">0</h2></div>
+  <div class="card brown"><h4>Po Pending</h4><h2 id="poPendQty">0</h2></div>
+  <div class="card teal"><h4>Cut Pending</h4><h2 id="cutPendQty">0</h2></div>
+  <div class="card green"><h4>GRN Qty</h4><h2 id="grnQty">0</h2></div>
+  <div class="card pink"><h4>Amm Qty</h4><h2 id="ammQty">0</h2></div>
+  <div class="card red"><h4>Short Qty</h4><h2 id="shortQty">0</h2></div>
+  <div class="card purple"><h4>QC Fail Qty</h4><h2 id="qcQty">0</h2></div>
 </div>
 
-<div class="card">
-<div class="card-title">Cut Qty</div>
-<div class="card-value">0</div>
-</div>
-
-<div class="card">
-<div class="card-title">Line Qty</div>
-<div class="card-value">0</div>
-</div>
-
-<div class="card">
-<div class="card-title">Finished Qty</div>
-<div class="card-value">0</div>
-</div>
-
-<div class="card">
-<div class="card-title">Packed</div>
-<div class="card-value">0</div>
-</div>
-
-<div class="card">
-<div class="card-title">GRN Qty</div>
-<div class="card-value">0</div>
-</div>
-
-<div class="card">
-<div class="card-title">Short Qty</div>
-<div class="card-value">0</div>
-</div>
-
-<div class="card">
-<div class="card-title">QC Fail Qty</div>
-<div class="card-value">0</div>
-</div>
-
-</div>
-
-<div class="total-amount">
-Total Amount (Selected Month): ₹ 0
-</div>
-
-<!-- DATA TABLE -->
 <div class="table-container">
 <table id="dataTable">
-<thead>
-<tr>
-<th>Job Card</th>
-<th>Brand</th>
-<th>Article</th>
-<th>PO Qty</th>
-<th>Cut Qty</th>
-<th>Line Qty</th>
-<th>Finished</th>
-<th>Packed</th>
-<th>GRN</th>
-<th>Short</th>
-<th>QC Fail</th>
-<th>Date</th>
-<th>Rate</th>
-<th>Amount</th>
-</tr>
-</thead>
-
-<tbody>
-
-<tr>
-<td>JC001</td>
-<td>Brand</td>
-<td>Article Code</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>01-Jan-2026</td>
-<td>0</td>
-<td>0</td>
-</tr>
-
-</tbody>
+  <thead>
+  <tr>
+    <th>Job Card No</th><th>Brand Name</th><th>Vendor Article Number</th>
+    <th>Po Qty</th><th>Cut Qty</th><th>Line Qty</th><th>Finished Qty</th><th>Packed</th>
+    <th>Gpt+Cat+Sam</th><th>Rejection</th><th>Excess</th><th>Po Pendng</th>
+    <th>Cut Pending</th><th>Grn Qty</th><th>Amm Qty</th><th>Short Qty</th>
+    <th>Qc Fail Qty</th><th>Qty Received Date</th><th>Remark</th><th>Rate</th><th>Amount</th>
+  </tr>
+  </thead>
+  <tbody></tbody>
 </table>
 </div>
 
 </div>
 
 <script>
-function filterByMonth(){
-    const selectedMonth = document.getElementById("monthFilter").value;
-    const rows = document.querySelectorAll("#dataTable tbody tr");
 
-    rows.forEach(row=>{
-        const dateText = row.cells[11].innerText;
-        const date = new Date(dateText);
-        const month = date.getMonth()+1;
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?output=csv";
 
-        if(selectedMonth==="All"){
-            row.style.display="";
-        }else{
-            row.style.display=(month==selectedMonth)?"":"none";
-        }
-    });
-}
+Papa.parse(sheetURL, {
+    download: true,
+    header: true,
+    complete: function(results) {
+
+        let data = results.data;
+        let totals = {
+            po:0, cut:0, line:0, fin:0, packed:0,
+            gcs:0, rej:0, excess:0, poPend:0,
+            cutPend:0, grn:0, amm:0, short:0, qc:0
+        };
+
+        let tbody = document.querySelector("#dataTable tbody");
+        tbody.innerHTML="";
+
+        data.forEach(row => {
+            // skip empty row
+            if(!row["Job Card No"]) return;
+
+            let tr = "<tr>";
+            tr += "<td>"+row["Job Card No"]+"</td>";
+            tr += "<td>"+row["Brand Name"]+"</td>";
+            tr += "<td>"+row["Vendor Article Number"]+"</td>";
+            tr += "<td>"+row["Po Qty"]+"</td>";
+            tr += "<td>"+row["Cut Qty"]+"</td>";
+            tr += "<td>"+row["Line Qty"]+"</td>";
+            tr += "<td>"+row["Finished Qty"]+"</td>";
+            tr += "<td>"+row["Packed"]+"</td>";
+            tr += "<td>"+row["Gpt+Cat+Sam"]+"</td>";
+            tr += "<td>"+row["Rejection"]+"</td>";
+            tr += "<td>"+row["Excess"]+"</td>";
+            tr += "<td>"+row["Po Pendng"]+"</td>";
+            tr += "<td>"+row["Cut Pending"]+"</td>";
+            tr += "<td>"+row["Grn Qty"]+"</td>";
+            tr += "<td>"+row["Amm Qty"]+"</td>";
+            tr += "<td>"+row["Short Qty"]+"</td>";
+            tr += "<td>"+row["Qc Fail Qty"]+"</td>";
+            tr += "<td>"+row["Qty Received Date"]+"</td>";
+            tr += "<td>"+row["Remark"]+"</td>";
+            tr += "<td>"+row["Rate"]+"</td>";
+            tr += "<td>"+row["Amount"]+"</td>";
+            tr += "</tr>";
+
+            tbody.innerHTML += tr;
+
+            // sum totals
+            totals.po += Number(row["Po Qty"])||0;
+            totals.cut += Number(row["Cut Qty"])||0;
+            totals.line += Number(row["Line Qty"])||0;
+            totals.fin += Number(row["Finished Qty"])||0;
+            totals.packed += Number(row["Packed"])||0;
+            totals.gcs += Number(row["Gpt+Cat+Sam"])||0;
+            totals.rej += Number(row["Rejection"])||0;
+            totals.excess += Number(row["Excess"])||0;
+            totals.poPend += Number(row["Po Pendng"])||0;
+            totals.cutPend += Number(row["Cut Pending"])||0;
+            totals.grn += Number(row["Grn Qty"])||0;
+            totals.amm += Number(row["Amm Qty"])||0;
+            totals.short += Number(row["Short Qty"])||0;
+            totals.qc += Number(row["Qc Fail Qty"])||0;
+
+        });
+
+        // display totals
+        document.getElementById("poQty").innerText = totals.po;
+        document.getElementById("cutQty").innerText = totals.cut;
+        document.getElementById("lineQty").innerText = totals.line;
+        document.getElementById("finQty").innerText = totals.fin;
+        document.getElementById("packedQty").innerText = totals.packed;
+        document.getElementById("gcsQty").innerText = totals.gcs;
+        document.getElementById("rejQty").innerText = totals.rej;
+        document.getElementById("excessQty").innerText = totals.excess;
+        document.getElementById("poPendQty").innerText = totals.poPend;
+        document.getElementById("cutPendQty").innerText = totals.cutPend;
+        document.getElementById("grnQty").innerText = totals.grn;
+        document.getElementById("ammQty").innerText = totals.amm;
+        document.getElementById("shortQty").innerText = totals.short;
+        document.getElementById("qcQty").innerText = totals.qc;
+
+    }
+});
+
 </script>
 
 </body>
