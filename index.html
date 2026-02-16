@@ -9,9 +9,27 @@
 body{margin:0;font-family:Segoe UI;background:#eef2f7;}
 .header{background:#0f172a;color:white;padding:18px;text-align:center;font-size:22px;font-weight:600;}
 .container{padding:20px;}
-.top-bar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:15px;}
-input,select{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
-button{padding:7px 14px;border:none;border-radius:6px;background:#111827;color:white;cursor:pointer;}
+
+.top-bar{
+display:flex;
+justify-content:space-between;
+margin-bottom:15px;
+}
+
+input{
+padding:6px 10px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+padding:7px 14px;
+border:none;
+border-radius:6px;
+background:#111827;
+color:white;
+cursor:pointer;
+}
 button:hover{background:black;}
 
 .cards{
@@ -20,12 +38,14 @@ grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
 gap:12px;
 margin-bottom:20px;
 }
+
 .card{
 padding:15px;
 border-radius:12px;
 color:white;
 box-shadow:0 5px 15px rgba(0,0,0,0.15);
 }
+
 .card h4{margin:0;font-size:12px;}
 .card h2{margin:6px 0 0;font-size:18px;font-weight:700;}
 
@@ -35,17 +55,48 @@ box-shadow:0 5px 15px rgba(0,0,0,0.15);
 .orange{background:#f97316;}
 .red{background:#dc2626;}
 .purple{background:#7c3aed;}
-.pink{background:#db2777;}
-.brown{background:#92400e;}
 .dark{background:#111827;}
 
-.table-container{background:white;border-radius:10px;overflow:auto;box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:#0f172a;color:white;padding:8px;position:sticky;top:0;}
-td{padding:8px;text-align:center;border-bottom:1px solid #eee;}
-tr:nth-child(even){background:#f9fafb;}
+.table-container{
+background:white;
+border-radius:10px;
+overflow:auto;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
 
-.error{color:red;font-weight:bold;margin-bottom:15px;}
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px;
+}
+
+th{
+background:#0f172a;
+color:white;
+padding:8px;
+position:sticky;
+top:0;
+}
+
+.filter-row th{
+background:#1f2937;
+}
+
+.filter-row select{
+width:100%;
+padding:4px;
+font-size:11px;
+}
+
+td{
+padding:8px;
+text-align:center;
+border-bottom:1px solid #eee;
+}
+
+tr:nth-child(even){
+background:#f9fafb;
+}
 
 </style>
 </head>
@@ -56,20 +107,19 @@ tr:nth-child(even){background:#f9fafb;}
 
 <div class="container">
 
-<div id="errorMsg" class="error"></div>
-
 <div class="top-bar">
-<input type="text" id="searchInput" placeholder="Search All...">
+<input type="text" id="searchInput" placeholder="Search...">
 <button onclick="window.print()">Print</button>
 </div>
-
-<div id="filterRow" class="top-bar"></div>
 
 <div class="cards" id="cardsContainer"></div>
 
 <div class="table-container">
 <table id="dataTable">
-<thead><tr id="headerRow"></tr></thead>
+<thead>
+<tr id="headerRow"></tr>
+<tr id="filterRow" class="filter-row"></tr>
+</thead>
 <tbody></tbody>
 </table>
 </div>
@@ -89,33 +139,18 @@ header:true,
 skipEmptyLines:true,
 complete:function(results){
 
-if(!results.data || results.data.length===0){
-document.getElementById("errorMsg").innerText="No data found in Google Sheet!";
-return;
-}
-
-fullData=results.data
-.filter(row=>Object.values(row).some(val=>val))
-.map(row=>{
-let newRow={};
-Object.keys(row).forEach(key=>{
-newRow[key.trim()] = row[key]?.toString().trim();
-});
-return newRow;
-});
-
+fullData=results.data.filter(r=>r["Job Card No"]);
 headers=Object.keys(fullData[0]);
 
-createTableHeaders();
+createHeaders();
 createFilters();
 createCards();
 applyFilters();
 }
 });
 
-function createTableHeaders(){
+function createHeaders(){
 let headerRow=document.getElementById("headerRow");
-headerRow.innerHTML="";
 headers.forEach(h=>{
 let th=document.createElement("th");
 th.innerText=h;
@@ -125,12 +160,13 @@ headerRow.appendChild(th);
 
 function createFilters(){
 let filterRow=document.getElementById("filterRow");
-filterRow.innerHTML="";
 
 headers.forEach(h=>{
+let th=document.createElement("th");
+
 let select=document.createElement("select");
 select.setAttribute("data-column",h);
-select.innerHTML=`<option value="">All ${h}</option>`;
+select.innerHTML=`<option value="">All</option>`;
 
 let unique=[...new Set(fullData.map(r=>r[h]))].filter(v=>v);
 
@@ -142,7 +178,9 @@ select.appendChild(opt);
 });
 
 select.addEventListener("change",applyFilters);
-filterRow.appendChild(select);
+
+th.appendChild(select);
+filterRow.appendChild(th);
 });
 }
 
@@ -156,12 +194,11 @@ let kpiColumns=[
 ];
 
 let colors=["blue","green","teal","purple","orange",
-"pink","red","brown","orange",
-"teal","green","pink","red",
-"purple","dark"];
+"red","purple","orange","teal",
+"green","blue","purple","red",
+"green","dark"];
 
 let container=document.getElementById("cardsContainer");
-container.innerHTML="";
 
 kpiColumns.forEach((col,i)=>{
 let div=document.createElement("div");
@@ -197,20 +234,21 @@ totals[h]=(totals[h]||0)+Number(row[h]);
 Object.keys(totals).forEach(key=>{
 let id=key.replace(/\s/g,'');
 let el=document.getElementById(id);
-if(el){ el.innerText=totals[key]; }
+if(el){el.innerText=totals[key];}
 });
 }
 
 function applyFilters(){
 
 let search=document.getElementById("searchInput").value.toLowerCase();
-let selects=document.querySelectorAll("#filterRow select");
+let selects=document.querySelectorAll(".filter-row select");
 
 let filtered=fullData.filter(row=>{
 
 let matchSearch=Object.values(row).join(" ").toLowerCase().includes(search);
 
 let matchFilter=true;
+
 selects.forEach(select=>{
 let col=select.getAttribute("data-column");
 let val=select.value;
