@@ -1,121 +1,212 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Production Dashboard</title>
 
 <style>
+
 body{
-    font-family: Arial;
-    background:#f4f6f9;
-    margin:20px;
+    margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background:#eef1f5;
 }
-h1{
-    text-align:center;
-}
-.cards{
+
+/* HEADER */
+.header{
+    background:#1f2937;
+    color:white;
+    padding:20px 30px;
+    font-size:22px;
+    font-weight:600;
     display:flex;
-    flex-wrap:wrap;
-    gap:10px;
+    justify-content:space-between;
+    align-items:center;
+}
+
+/* CONTAINER */
+.container{
+    padding:25px 30px;
+}
+
+/* FILTER */
+.filter-section{
     margin-bottom:20px;
 }
-.card{
-    flex:1 1 160px;
-    padding:15px;
-    border-radius:8px;
-    color:white;
-    font-weight:bold;
-    text-align:center;
+
+select{
+    padding:8px 12px;
+    border-radius:6px;
+    border:1px solid #ccc;
     font-size:14px;
 }
-.blue{background:#2f6db5;}
-.teal{background:#0f8a7c;}
-.green{background:#2e8b57;}
-.purple{background:#7b1fa2;}
-.red{background:#e53935;}
-.orange{background:#fb8c00;}
-.brown{background:#6d4c41;}
-.pink{background:#d81b60;}
-.dark{background:#333;}
+
+/* CARDS */
+.cards{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.card{
+    background:white;
+    padding:18px;
+    border-radius:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+}
+
+.card-title{
+    font-size:13px;
+    color:#666;
+    margin-bottom:8px;
+}
+
+.card-value{
+    font-size:22px;
+    font-weight:600;
+    color:#111827;
+}
+
+/* TOTAL AMOUNT */
+.total-amount{
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:20px;
+}
+
+/* TABLE */
+.table-container{
+    background:white;
+    border-radius:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
+    overflow:auto;
+}
 
 table{
     width:100%;
     border-collapse:collapse;
-    background:white;
-}
-th,td{
-    border:1px solid #ccc;
-    padding:8px;
-    text-align:center;
     font-size:13px;
 }
+
 th{
-    background:#444;
+    background:#111827;
     color:white;
+    padding:12px;
+    position:sticky;
+    top:0;
 }
-select{
-    padding:6px;
-    margin-bottom:15px;
+
+td{
+    padding:10px;
+    border-bottom:1px solid #eee;
+    text-align:center;
 }
+
+tr:hover{
+    background:#f3f4f6;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>Production Dashboard</h1>
-
-<select id="monthFilter" onchange="filterByMonth()">
-    <option value="All">All Months</option>
-    <option value="1">January</option>
-    <option value="2">February</option>
-    <option value="3">March</option>
-    <option value="4">April</option>
-    <option value="5">May</option>
-    <option value="6">June</option>
-    <option value="7">July</option>
-    <option value="8">August</option>
-    <option value="9">September</option>
-    <option value="10">October</option>
-    <option value="11">November</option>
-    <option value="12">December</option>
-</select>
-
-<!-- DASHBOARD TOTALS (MANUAL ENTRY) -->
-<div class="cards">
-    <div class="card blue">Po Qty<br>0</div>
-    <div class="card teal">Cut Qty<br>0</div>
-    <div class="card green">Line Qty<br>0</div>
-    <div class="card green">Finished Qty<br>0</div>
-    <div class="card green">Packed<br>0</div>
-    <div class="card purple">Gpt+Cat+Sam<br>0</div>
-    <div class="card red">Rejection<br>0</div>
-    <div class="card orange">Excess<br>0</div>
-    <div class="card orange">Po Pending<br>0</div>
-    <div class="card brown">Cut Pending<br>0</div>
-    <div class="card teal">Grn Qty<br>0</div>
-    <div class="card pink">Amm Qty<br>0</div>
-    <div class="card red">Short Qty<br>0</div>
-    <div class="card dark">Qc Fail Qty<br>0</div>
+<div class="header">
+    Production Dashboard
 </div>
 
-<h3>Total Amount (Selected Month): ₹ 0</h3>
+<div class="container">
+
+<div class="filter-section">
+    <select id="monthFilter" onchange="filterByMonth()">
+        <option value="All">All Months</option>
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+    </select>
+</div>
+
+<!-- DASHBOARD CARDS (MANUAL TOTAL ENTRY) -->
+<div class="cards">
+
+<div class="card">
+<div class="card-title">PO Qty</div>
+<div class="card-value">0</div>
+</div>
+
+<div class="card">
+<div class="card-title">Cut Qty</div>
+<div class="card-value">0</div>
+</div>
+
+<div class="card">
+<div class="card-title">Line Qty</div>
+<div class="card-value">0</div>
+</div>
+
+<div class="card">
+<div class="card-title">Finished Qty</div>
+<div class="card-value">0</div>
+</div>
+
+<div class="card">
+<div class="card-title">Packed</div>
+<div class="card-value">0</div>
+</div>
+
+<div class="card">
+<div class="card-title">GRN Qty</div>
+<div class="card-value">0</div>
+</div>
+
+<div class="card">
+<div class="card-title">Short Qty</div>
+<div class="card-value">0</div>
+</div>
+
+<div class="card">
+<div class="card-title">QC Fail Qty</div>
+<div class="card-value">0</div>
+</div>
+
+</div>
+
+<div class="total-amount">
+Total Amount (Selected Month): ₹ 0
+</div>
 
 <!-- DATA TABLE -->
+<div class="table-container">
 <table id="dataTable">
 <thead>
 <tr>
 <th>Job Card</th>
 <th>Brand</th>
 <th>Article</th>
-<th>Po Qty</th>
+<th>PO Qty</th>
 <th>Cut Qty</th>
 <th>Line Qty</th>
 <th>Finished</th>
 <th>Packed</th>
-<th>Grn Qty</th>
-<th>Amm</th>
+<th>GRN</th>
 <th>Short</th>
-<th>Qc Fail</th>
+<th>QC Fail</th>
 <th>Date</th>
 <th>Rate</th>
 <th>Amount</th>
@@ -124,12 +215,10 @@ select{
 
 <tbody>
 
-<!-- SAMPLE ROW (COPY THIS ROW TO ADD MORE DATA) -->
 <tr>
 <td>JC001</td>
-<td>Brand Name</td>
+<td>Brand</td>
 <td>Article Code</td>
-<td>0</td>
 <td>0</td>
 <td>0</td>
 <td>0</td>
@@ -145,6 +234,9 @@ select{
 
 </tbody>
 </table>
+</div>
+
+</div>
 
 <script>
 function filterByMonth(){
@@ -152,7 +244,7 @@ function filterByMonth(){
     const rows = document.querySelectorAll("#dataTable tbody tr");
 
     rows.forEach(row=>{
-        const dateText = row.cells[12].innerText;
+        const dateText = row.cells[11].innerText;
         const date = new Date(dateText);
         const month = date.getMonth()+1;
 
