@@ -2,96 +2,50 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Advanced Production Dashboard</title>
+<title>Production Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
-body{margin:0; font-family:Segoe UI; background:#eef2f7;}
-.header{background:#0f172a; color:white; padding:18px; font-size:22px; font-weight:600; text-align:center;}
+body{margin:0;font-family:Segoe UI;background:#eef2f7;}
+.header{background:#0f172a;color:white;padding:18px;text-align:center;font-size:22px;font-weight:600;}
 .container{padding:20px;}
-
-.top-bar{
-  display:flex;
-  justify-content:space-between;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-bottom:15px;
-}
-input,select{
-  padding:6px 10px;
-  border-radius:6px;
-  border:1px solid #ccc;
-}
-button{
-  padding:7px 14px;
-  border:none;
-  border-radius:6px;
-  background:#111827;
-  color:white;
-  cursor:pointer;
-}
-button:hover{background:#000;}
+.top-bar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:15px;}
+input,select{padding:6px 10px;border-radius:6px;border:1px solid #ccc;}
+button{padding:7px 14px;border:none;border-radius:6px;background:#111827;color:white;cursor:pointer;}
+button:hover{background:black;}
 
 .cards{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px;
-  margin-bottom:20px;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+gap:12px;
+margin-bottom:20px;
 }
 .card{
-  padding:16px;
-  border-radius:12px;
-  color:white;
-  box-shadow:0 5px 15px rgba(0,0,0,0.15);
+padding:15px;
+border-radius:12px;
+color:white;
+box-shadow:0 5px 15px rgba(0,0,0,0.15);
 }
-.card h4{margin:0; font-size:13px;}
-.card h2{margin:6px 0 0; font-size:20px; font-weight:700;}
+.card h4{margin:0;font-size:12px;}
+.card h2{margin:6px 0 0;font-size:18px;font-weight:700;}
 
-.blue{background:linear-gradient(135deg,#2563eb,#1e3a8a);}
-.green{background:linear-gradient(135deg,#16a34a,#065f46);}
-.teal{background:linear-gradient(135deg,#0ea5e9,#155e75);}
-.orange{background:linear-gradient(135deg,#f97316,#c2410c);}
-.red{background:linear-gradient(135deg,#dc2626,#7f1d1d);}
-.purple{background:linear-gradient(135deg,#7c3aed,#4c1d95);}
-.pink{background:linear-gradient(135deg,#db2777,#831843);}
-.brown{background:linear-gradient(135deg,#92400e,#451a03);}
-.dark{background:linear-gradient(135deg,#111827,#000);}
+.blue{background:#2563eb;}
+.green{background:#16a34a;}
+.teal{background:#0ea5e9;}
+.orange{background:#f97316;}
+.red{background:#dc2626;}
+.purple{background:#7c3aed;}
+.pink{background:#db2777;}
+.brown{background:#92400e;}
+.dark{background:#111827;}
 
-.table-container{
-  background:white;
-  border-radius:10px;
-  overflow:auto;
-  box-shadow:0 6px 18px rgba(0,0,0,0.1);
-}
+.table-container{background:white;border-radius:10px;overflow:auto;box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:#0f172a;color:white;padding:8px;position:sticky;top:0;}
+td{padding:8px;text-align:center;border-bottom:1px solid #eee;}
+tr:nth-child(even){background:#f9fafb;}
 
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px;
-}
-
-th{
-  background:#0f172a;
-  color:white;
-  padding:8px;
-  position:sticky;
-  top:0;
-}
-
-td{
-  padding:8px;
-  text-align:center;
-  border-bottom:1px solid #eee;
-}
-
-tr:nth-child(even){
-  background:#f9fafb;
-}
-
-@media print{
-  .top-bar{display:none;}
-  body{background:white;}
-}
+.error{color:red;font-weight:bold;margin-bottom:15px;}
 
 </style>
 </head>
@@ -102,9 +56,11 @@ tr:nth-child(even){
 
 <div class="container">
 
+<div id="errorMsg" class="error"></div>
+
 <div class="top-bar">
-  <input type="text" id="searchInput" placeholder="Search All...">
-  <button onclick="window.print()">Print</button>
+<input type="text" id="searchInput" placeholder="Search All...">
+<button onclick="window.print()">Print</button>
 </div>
 
 <div id="filterRow" class="top-bar"></div>
@@ -112,10 +68,10 @@ tr:nth-child(even){
 <div class="cards" id="cardsContainer"></div>
 
 <div class="table-container">
-  <table id="dataTable">
-    <thead><tr id="headerRow"></tr></thead>
-    <tbody></tbody>
-  </table>
+<table id="dataTable">
+<thead><tr id="headerRow"></tr></thead>
+<tbody></tbody>
+</table>
 </div>
 
 </div>
@@ -128,119 +84,143 @@ let fullData=[];
 let headers=[];
 
 Papa.parse(sheetURL,{
-  download:true,
-  header:true,
-  complete:function(results){
-    fullData=results.data.filter(r=>r["Job Card No"]);
-    headers=Object.keys(fullData[0]);
-    createTableHeaders();
-    createFilters();
-    createCards();
-    applyFilters(); // initial
-  }
+download:true,
+header:true,
+skipEmptyLines:true,
+complete:function(results){
+
+if(!results.data || results.data.length===0){
+document.getElementById("errorMsg").innerText="No data found in Google Sheet!";
+return;
+}
+
+fullData=results.data
+.filter(row=>Object.values(row).some(val=>val))
+.map(row=>{
+let newRow={};
+Object.keys(row).forEach(key=>{
+newRow[key.trim()] = row[key]?.toString().trim();
+});
+return newRow;
+});
+
+headers=Object.keys(fullData[0]);
+
+createTableHeaders();
+createFilters();
+createCards();
+applyFilters();
+}
 });
 
 function createTableHeaders(){
-  let headerRow=document.getElementById("headerRow");
-  headers.forEach(h=>{
-    let th=document.createElement("th");
-    th.innerText=h;
-    headerRow.appendChild(th);
-  });
+let headerRow=document.getElementById("headerRow");
+headerRow.innerHTML="";
+headers.forEach(h=>{
+let th=document.createElement("th");
+th.innerText=h;
+headerRow.appendChild(th);
+});
 }
 
 function createFilters(){
-  let filterRow=document.getElementById("filterRow");
-  headers.forEach(h=>{
-    let select=document.createElement("select");
-    select.setAttribute("data-column",h);
-    select.innerHTML=`<option value="">All ${h}</option>`;
-    let unique=[...new Set(fullData.map(r=>r[h]))].sort();
-    unique.forEach(val=>{
-      if(val){
-        let opt=document.createElement("option");
-        opt.value=val;
-        opt.text=val;
-        select.appendChild(opt);
-      }
-    });
-    select.addEventListener("change",applyFilters);
-    filterRow.appendChild(select);
-  });
+let filterRow=document.getElementById("filterRow");
+filterRow.innerHTML="";
+
+headers.forEach(h=>{
+let select=document.createElement("select");
+select.setAttribute("data-column",h);
+select.innerHTML=`<option value="">All ${h}</option>`;
+
+let unique=[...new Set(fullData.map(r=>r[h]))].filter(v=>v);
+
+unique.forEach(val=>{
+let opt=document.createElement("option");
+opt.value=val;
+opt.text=val;
+select.appendChild(opt);
+});
+
+select.addEventListener("change",applyFilters);
+filterRow.appendChild(select);
+});
 }
 
 function createCards(){
-  let kpiColumns=[
+
+let kpiColumns=[
 "Po Qty","Cut Qty","Line Qty","Finished Qty","Packed",
 "Gpt+Cat+Sam","Rejection","Excess","Po Pendng",
 "Cut Pending","Grn Qty","Amm Qty","Short Qty",
 "Qc Fail Qty","Amount"
-  ];
-  
-  let colors=["blue","green","teal","purple","orange",
+];
+
+let colors=["blue","green","teal","purple","orange",
 "pink","red","brown","orange",
 "teal","green","pink","red",
 "purple","dark"];
-  
-  let container=document.getElementById("cardsContainer");
-  container.innerHTML="";
-  
-  kpiColumns.forEach((col,i)=>{
-    let div=document.createElement("div");
-    div.className="card "+colors[i];
-    div.innerHTML=`<h4>${col}</h4><h2 id="${col.replace(/\s/g,'')}">0</h2>`;
-    container.appendChild(div);
-  });
+
+let container=document.getElementById("cardsContainer");
+container.innerHTML="";
+
+kpiColumns.forEach((col,i)=>{
+let div=document.createElement("div");
+div.className="card "+colors[i];
+div.innerHTML=`<h4>${col}</h4><h2 id="${col.replace(/\s/g,'')}">0</h2>`;
+container.appendChild(div);
+});
 }
 
 function renderTable(data){
-  let tbody=document.querySelector("#dataTable tbody");
-  tbody.innerHTML="";
 
-  let totals={};
+let tbody=document.querySelector("#dataTable tbody");
+tbody.innerHTML="";
 
-  data.forEach(row=>{
-    let tr="<tr>";
-    headers.forEach(h=>{
-      tr+=`<td>${row[h]||""}</td>`;
-    });
-    tr+="</tr>";
-    tbody.innerHTML+=tr;
+let totals={};
 
-    headers.forEach(h=>{
-      if(!isNaN(row[h]) && row[h]!=""){
-        totals[h]=(totals[h]||0)+Number(row[h]);
-      }
-    });
-  });
+data.forEach(row=>{
 
-  // update KPI cards totals
-  Object.keys(totals).forEach(key=>{
-    let id=key.replace(/\s/g,'');
-    let el=document.getElementById(id);
-    if(el){ el.innerText=totals[key]; }
-  });
+let tr="<tr>";
+headers.forEach(h=>{
+tr+=`<td>${row[h]||""}</td>`;
+});
+tr+="</tr>";
+tbody.innerHTML+=tr;
+
+headers.forEach(h=>{
+if(!isNaN(row[h]) && row[h]!=""){
+totals[h]=(totals[h]||0)+Number(row[h]);
+}
+});
+});
+
+Object.keys(totals).forEach(key=>{
+let id=key.replace(/\s/g,'');
+let el=document.getElementById(id);
+if(el){ el.innerText=totals[key]; }
+});
 }
 
 function applyFilters(){
-  let search=document.getElementById("searchInput").value.toLowerCase();
 
-  let selects=document.querySelectorAll("#filterRow select");
+let search=document.getElementById("searchInput").value.toLowerCase();
+let selects=document.querySelectorAll("#filterRow select");
 
-  let filtered=fullData.filter(row=>{
-    let matchSearch=Object.values(row).join(" ").toLowerCase().includes(search);
-    let matchFilter=true;
+let filtered=fullData.filter(row=>{
 
-    selects.forEach(select=>{
-      let col=select.getAttribute("data-column");
-      let val=select.value;
-      if(val && row[col]!=val){ matchFilter=false; }
-    });
+let matchSearch=Object.values(row).join(" ").toLowerCase().includes(search);
 
-    return matchSearch && matchFilter;
-  });
+let matchFilter=true;
+selects.forEach(select=>{
+let col=select.getAttribute("data-column");
+let val=select.value;
+if(val && row[col]!=val){matchFilter=false;}
+});
 
-  renderTable(filtered);
+return matchSearch && matchFilter;
+});
+
+renderTable(filtered);
 }
 
 document.getElementById("searchInput").addEventListener("keyup",applyFilters);
