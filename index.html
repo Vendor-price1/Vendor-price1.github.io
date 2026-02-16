@@ -4,10 +4,15 @@
 <meta charset="UTF-8">
 <title>Gee Impex Live Production Dashboard</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#eef2f7;}
@@ -73,54 +78,6 @@ box-shadow:0 4px 10px rgba(0,0,0,0.2);
 .color4{background:#7c3aed;}
 .color5{background:#111827;}
 
-.table-container{
-background:white;
-border-radius:10px;
-overflow:auto;
-box-shadow:0 5px 15px rgba(0,0,0,0.1);
-position:relative;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-font-size:11px;
-min-width:1000px;
-}
-
-th{
-background:#000;
-color:white;
-padding:8px;
-text-align:center;
-position:sticky;
-top:0;
-cursor:pointer;
-}
-
-td{
-padding:6px;
-text-align:center;
-border-bottom:1px solid #eee;
-}
-
-tr:nth-child(even){background:#f9fafb;}
-
-.filter-box{
-position:absolute;
-background:white;
-border:1px solid #ccc;
-padding:10px;
-max-height:250px;
-overflow:auto;
-z-index:999;
-display:none;
-font-size:12px;
-box-shadow:0 4px 10px rgba(0,0,0,0.2);
-}
-
-.filter-box label{display:block;}
-
 .footer{
 background:#000;
 color:white;
@@ -130,8 +87,13 @@ margin-top:20px;
 font-size:13px;
 }
 
+table.dataTable thead{
+background:black;
+color:white;
+}
+
 @media print{
-.top-bar,.clock,.filter-box,button{display:none;}
+.top-bar,.clock,.dataTables_filter,.dataTables_length,.dataTables_paginate{display:none;}
 }
 </style>
 </head>
@@ -147,19 +109,12 @@ font-size:13px;
 
 <div class="top-bar">
 <button onclick="exportToExcel()">Export Excel</button>
-<button onclick="resetFilters()">Reset Filter</button>
 <button onclick="window.print()">Print</button>
 </div>
 
 <div class="cards" id="cardsContainer"></div>
 
-<div class="table-container">
-<table id="dataTable">
-<thead><tr id="headerRow"></tr></thead>
-<tbody></tbody>
-</table>
-<div id="filterBox" class="filter-box"></div>
-</div>
+<table id="dataTable" class="display" style="width:100%"></table>
 
 </div>
 
@@ -172,10 +127,8 @@ Created by: Vijay Pandey
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 let fullData=[];
-let filteredData=[];
-let headers=[];
 let numericColumns=[];
-let filters={};
+let table;
 
 /* CLOCK */
 function updateClock(){
@@ -195,142 +148,66 @@ skipEmptyLines:true,
 complete:function(res){
 
 fullData=res.data.filter(r=>Object.values(r).some(v=>v));
-headers=Object.keys(fullData[0]);
 
-detectNumeric();
-createHeaders();
-createCards();
-applyFilters();
+if(fullData.length==0) return;
+
+let headers=Object.keys(fullData[0]);
+
+numericColumns=headers.filter(h=>{
+if(h.toLowerCase()=="rate") return false;   // RATE BOX REMOVE
+return fullData.some(r=>!isNaN(parseFloat(r[h])));
+});
+
+createCards(headers);
+
+if(table){
+table.clear().rows.add(fullData).draw();
+}else{
+table=$('#dataTable').DataTable({
+data:fullData,
+columns:headers.map(h=>({title:h,data:h})),
+destroy:true
+});
+}
+
+updateCards();
 }
 });
 }
+
 loadData();
 setInterval(loadData,60000);
 
-/* DETECT NUMERIC */
-function detectNumeric(){
-numericColumns=headers.filter(h=>{
-return fullData.some(r=>!isNaN(parseFloat(r[h])));
-});
-}
-
-/* CREATE HEADERS */
-function createHeaders(){
-let row=document.getElementById("headerRow");
-row.innerHTML="";
-headers.forEach(h=>{
-let th=document.createElement("th");
-th.innerHTML=h+" ⏷";
-th.onclick=(e)=>showFilter(e,h);
-row.appendChild(th);
-});
-}
-
-/* SHOW FILTER */
-function showFilter(e,column){
-
-let box=document.getElementById("filterBox");
-box.innerHTML="";
-
-let values=[...new Set(fullData.map(r=>String(r[column]||"").trim()))];
-values.sort();
-
-values.forEach(v=>{
-let label=document.createElement("label");
-label.innerHTML=`<input type="checkbox" value="${v}"> ${v}`;
-box.appendChild(label);
-});
-
-let btn=document.createElement("button");
-btn.innerText="Apply";
-btn.style.marginTop="5px";
-btn.onclick=function(){
-
-let selected=[...box.querySelectorAll("input:checked")]
-.map(i=>i.value);
-
-if(selected.length===0){
-delete filters[column];
-}else{
-filters[column]=selected;
-}
-
-box.style.display="none";
-applyFilters();
-};
-
-box.appendChild(btn);
-
-box.style.display="block";
-box.style.left=e.pageX+"px";
-box.style.top=e.pageY+"px";
-}
-
-/* APPLY FILTERS */
-function applyFilters(){
-
-filteredData=fullData.filter(row=>{
-for(let col in filters){
-let cell=String(row[col]||"").trim();
-if(!filters[col].includes(cell)){
-return false;
-}
-}
-return true;
-});
-
-renderTable();
-updateCards();
-}
-
-/* RESET */
-function resetFilters(){
-filters={};
-applyFilters();
-}
-
-/* TABLE */
-function renderTable(){
-let tbody=document.querySelector("#dataTable tbody");
-tbody.innerHTML="";
-
-filteredData.forEach(r=>{
-let tr="<tr>";
-headers.forEach(h=>{
-tr+=`<td>${r[h]||""}</td>`;
-});
-tr+="</tr>";
-tbody.innerHTML+=tr;
-});
-}
-
 /* CARDS */
-function createCards(){
+function createCards(headers){
+
 let container=document.getElementById("cardsContainer");
 container.innerHTML="";
 
 numericColumns.forEach((col,i)=>{
 let div=document.createElement("div");
 div.className="card color"+(i%6);
-div.innerHTML=`<h4>${col}</h4><h2 id="kpi_${i}">0</h2>`;
+div.innerHTML=`<h4>${col}</h4><h2 id="kpi_${col}">0</h2>`;
 container.appendChild(div);
 });
 }
 
 function updateCards(){
-numericColumns.forEach((col,i)=>{
+
+numericColumns.forEach(col=>{
 let total=0;
-filteredData.forEach(r=>{
+fullData.forEach(r=>{
 let num=parseFloat(r[col]);
 if(!isNaN(num)) total+=num;
 });
-document.getElementById("kpi_"+i).innerText=total;
+let el=document.getElementById("kpi_"+col);
+if(el) el.innerText=total;
 });
 }
 
 /* EXPORT */
 function exportToExcel(){
-let ws=XLSX.utils.json_to_sheet(filteredData);
+let ws=XLSX.utils.json_to_sheet(fullData);
 let wb=XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb,ws,"Dashboard");
 XLSX.writeFile(wb,"Gee_Impex_Dashboard.xlsx");
