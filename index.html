@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Production Dashboard</title>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f2f2f2;
+    margin:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.dashboard{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+    gap:15px;
+    margin-bottom:25px;
+}
+
+.card{
+    padding:15px;
+    border-radius:10px;
+    color:white;
+    text-align:center;
+    font-weight:bold;
+}
+
+.card span{
+    display:block;
+    font-size:22px;
+    margin-top:5px;
+}
+
+.blue{background:#2b78c5;}
+.green{background:#2e8b57;}
+.purple{background:#8e24aa;}
+.red{background:#e53935;}
+.orange{background:#fb8c00;}
+.brown{background:#6d4c41;}
+.teal{background:#00897b;}
+.pink{background:#d81b60;}
+.dark{background:#333;}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th,td{
+    border:1px solid #ccc;
+    padding:6px;
+    text-align:center;
+    font-size:13px;
+}
+
+th{
+    background:#444;
+    color:white;
+    position:sticky;
+    top:0;
+}
+
+th input{
+    width:95%;
+    margin-top:3px;
+    font-size:11px;
+}
+
+.monthSelect{
+    margin-bottom:15px;
+}
+
+.totalAmount{
+    font-size:20px;
+    font-weight:bold;
+    margin:15px 0;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Production Dashboard</h1>
+
+<select id="monthFilter" class="monthSelect">
+<option value="">All Months</option>
+<option value="2025-01">Jan 2025</option>
+<option value="2025-02">Feb 2025</option>
+<option value="2025-03">Mar 2025</option>
+</select>
+
+<div class="dashboard">
+
+<div class="card blue">Po Qty <span id="poQty">0</span></div>
+<div class="card teal">Cut Qty <span id="cutQty">0</span></div>
+<div class="card green">Line Qty <span id="lineQty">0</span></div>
+<div class="card green">Finished Qty <span id="finishedQty">0</span></div>
+<div class="card green">Packed <span id="packed">0</span></div>
+<div class="card purple">Gpt+Cat+Sam <span id="gcs">0</span></div>
+<div class="card red">Rejection <span id="rejection">0</span></div>
+<div class="card orange">Excess <span id="excess">0</span></div>
+<div class="card orange">Po Pending <span id="poPending">0</span></div>
+<div class="card brown">Cut Pending <span id="cutPending">0</span></div>
+<div class="card teal">Grn Qty <span id="grnQty">0</span></div>
+<div class="card pink">Amm Qty <span id="ammQty">0</span></div>
+<div class="card red">Short Qty <span id="shortQty">0</span></div>
+<div class="card dark">Qc Fail Qty <span id="qcFail">0</span></div>
+
+</div>
+
+<div class="totalAmount">
+Total Amount (Selected Month): ₹ <span id="totalAmount">0</span>
+</div>
+
+<table id="dataTable">
+<thead>
+<tr>
+<th>Job Card No<br><input onkeyup="filterTable()"></th>
+<th>Brand Name<br><input onkeyup="filterTable()"></th>
+<th>Vendor Article Number<br><input onkeyup="filterTable()"></th>
+<th>Po Qty<br><input onkeyup="filterTable()"></th>
+<th>Cut Qty<br><input onkeyup="filterTable()"></th>
+<th>Line Qty<br><input onkeyup="filterTable()"></th>
+<th>Finished Qty<br><input onkeyup="filterTable()"></th>
+<th>Packed<br><input onkeyup="filterTable()"></th>
+<th>Gpt+Cat+Sam<br><input onkeyup="filterTable()"></th>
+<th>Rejection<br><input onkeyup="filterTable()"></th>
+<th>Excess<br><input onkeyup="filterTable()"></th>
+<th>Po Pending<br><input onkeyup="filterTable()"></th>
+<th>Cut Pending<br><input onkeyup="filterTable()"></th>
+<th>Grn Qty<br><input onkeyup="filterTable()"></th>
+<th>Amm Qty<br><input onkeyup="filterTable()"></th>
+<th>Short Qty<br><input onkeyup="filterTable()"></th>
+<th>Qc Fail Qty<br><input onkeyup="filterTable()"></th>
+<th>Qty Received Date<br><input onkeyup="filterTable()"></th>
+<th>Remark<br><input onkeyup="filterTable()"></th>
+<th>Rate<br><input onkeyup="filterTable()"></th>
+<th>Amount<br><input onkeyup="filterTable()"></th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr>
+<td>JC01</td><td>Anouk</td><td>AN001</td>
+<td>248</td><td>251</td><td>251</td><td>251</td>
+<td>241</td><td>4</td><td>0</td><td>0</td>
+<td>3</td><td>6</td><td>240</td><td>1</td>
+<td>0</td><td>0</td>
+<td>2025-01-10</td><td>Ok</td><td>100</td><td>24000</td>
+</tr>
+
+<tr>
+<td>JC02</td><td>Sztori</td><td>SZ001</td>
+<td>248</td><td>239</td><td>239</td><td>239</td>
+<td>235</td><td>4</td><td>0</td><td>0</td>
+<td>9</td><td>0</td><td>230</td><td>3</td>
+<td>1</td><td>1</td>
+<td>2025-02-05</td><td>Delay</td><td>120</td><td>27600</td>
+</tr>
+
+</tbody>
+</table>
+
+<script>
+
+function animateValue(id, end){
+    let obj = document.getElementById(id);
+    let start = 0;
+    let duration = 800;
+    let startTime = null;
+
+    function animation(currentTime){
+        if(!startTime) startTime = currentTime;
+        let progress = Math.min((currentTime - startTime)/duration,1);
+        obj.innerHTML = Math.floor(progress * end);
+        if(progress < 1){
+            requestAnimationFrame(animation);
+        } else {
+            obj.innerHTML = end;
+        }
+    }
+    requestAnimationFrame(animation);
+}
+
+function filterTable(){
+
+let table = document.getElementById("dataTable");
+let inputs = table.getElementsByTagName("input");
+let rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+
+let month = document.getElementById("monthFilter").value;
+
+let totals = Array(14).fill(0);
+let totalAmount = 0;
+
+for(let i=0;i<rows.length;i++){
+    let show = true;
+    let cells = rows[i].getElementsByTagName("td");
+
+    for(let j=0;j<inputs.length;j++){
+        let filter = inputs[j].value.toLowerCase();
+        if(filter && !cells[j].innerText.toLowerCase().includes(filter)){
+            show=false;
+            break;
+        }
+    }
+
+    if(month){
+        if(!cells[17].innerText.startsWith(month)){
+            show=false;
+        }
+    }
+
+    rows[i].style.display = show ? "" : "none";
+
+    if(show){
+        totals[0]+=Number(cells[3].innerText);
+        totals[1]+=Number(cells[4].innerText);
+        totals[2]+=Number(cells[5].innerText);
+        totals[3]+=Number(cells[6].innerText);
+        totals[4]+=Number(cells[7].innerText);
+        totals[5]+=Number(cells[8].innerText);
+        totals[6]+=Number(cells[9].innerText);
+        totals[7]+=Number(cells[10].innerText);
+        totals[8]+=Number(cells[11].innerText);
+        totals[9]+=Number(cells[12].innerText);
+        totals[10]+=Number(cells[13].innerText);
+        totals[11]+=Number(cells[14].innerText);
+        totals[12]+=Number(cells[15].innerText);
+        totals[13]+=Number(cells[16].innerText);
+
+        totalAmount+=Number(cells[20].innerText);
+    }
+}
+
+animateValue("poQty", totals[0]);
+animateValue("cutQty", totals[1]);
+animateValue("lineQty", totals[2]);
+animateValue("finishedQty", totals[3]);
+animateValue("packed", totals[4]);
+animateValue("gcs", totals[5]);
+animateValue("rejection", totals[6]);
+animateValue("excess", totals[7]);
+animateValue("poPending", totals[8]);
+animateValue("cutPending", totals[9]);
+animateValue("grnQty", totals[10]);
+animateValue("ammQty", totals[11]);
+animateValue("shortQty", totals[12]);
+animateValue("qcFail", totals[13]);
+
+document.getElementById("totalAmount").innerText = totalAmount;
+
+}
+
+document.getElementById("monthFilter").addEventListener("change", filterTable);
+
+window.onload = filterTable;
+
+</script>
+
+</body>
+</html>
