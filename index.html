@@ -5,7 +5,7 @@
 <title>Gee Impex Live Production Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- jQuery FIRST -->
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
 <!-- DataTables -->
@@ -15,9 +15,8 @@
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 
-<!-- CSV Parser -->
+<!-- CSV -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
@@ -43,7 +42,10 @@ font-size:13px;
 .container{padding:15px;}
 
 .top-controls{
+display:flex;
+gap:10px;
 margin-bottom:15px;
+flex-wrap:wrap;
 }
 
 button{
@@ -85,6 +87,15 @@ table.dataTable thead th{
 background:#000;
 color:#fff;
 position:relative;
+white-space:nowrap;
+}
+
+table.dataTable td{
+white-space:nowrap;
+}
+
+.text-right{
+text-align:right;
 }
 
 .filter-icon{
@@ -134,7 +145,7 @@ Created by: Vijay Pandey
 
 <script>
 
-const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
+const sheetURL="YOUR_GOOGLE_SHEET_CSV_LINK_HERE";
 
 let table;
 let numericColumns=[];
@@ -176,10 +187,22 @@ $('#dataTable').empty();
 
 table=$('#dataTable').DataTable({
 data:data,
-columns:headers.map(h=>({title:h,data:h})),
 scrollX:true,
+ordering:false,   // ❌ SORT REMOVED
 dom:'Bfrtip',
-buttons:['excel','print']
+buttons:[
+{
+extend:'excelHtml5',
+title:'Gee Impex Production Report',
+text:'Export to Excel'
+}
+],
+columns:headers.map(h=>{
+if(numericColumns.includes(h)){
+return {title:h,data:h,className:'text-right'};
+}
+return {title:h,data:h};
+})
 });
 
 addColumnFilters(table);
@@ -198,7 +221,7 @@ updateCards(data);
 loadData();
 setInterval(loadData,60000);
 
-/* KPI CARDS */
+/* KPI */
 function createCards(headers){
 let container=document.getElementById("cardsContainer");
 container.innerHTML="";
@@ -224,9 +247,7 @@ if(el) el.innerText=total;
 
 /* COLUMN FILTER */
 function addColumnFilters(table){
-
 table.columns().every(function(){
-
 let column=this;
 let header=$(column.header());
 header.find('.filter-icon').remove();
@@ -250,9 +271,7 @@ column.data().unique().sort().each(function(d){
 select.append('<option value="'+d+'">'+d+'</option>');
 });
 });
-
 });
-
 }
 
 /* RESET */
