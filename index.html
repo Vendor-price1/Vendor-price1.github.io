@@ -30,11 +30,10 @@ background:#111827;
 color:white;
 cursor:pointer;
 }
-button:hover{background:black;}
 
 .cards{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
 gap:12px;
 margin-bottom:20px;
 }
@@ -45,13 +44,11 @@ border-radius:12px;
 color:white;
 box-shadow:0 5px 15px rgba(0,0,0,0.15);
 }
-
 .card h4{margin:0;font-size:12px;}
 .card h2{margin:6px 0 0;font-size:18px;font-weight:700;}
 
 .blue{background:#2563eb;}
 .green{background:#16a34a;}
-.teal{background:#0ea5e9;}
 .orange{background:#f97316;}
 .red{background:#dc2626;}
 .purple{background:#7c3aed;}
@@ -76,16 +73,38 @@ color:white;
 padding:8px;
 position:sticky;
 top:0;
+text-align:center;
+position:relative;
 }
 
-.filter-row th{
-background:#1f2937;
-}
-
-.filter-row select{
-width:100%;
-padding:4px;
+th .filter-icon{
+cursor:pointer;
+margin-left:6px;
 font-size:11px;
+}
+
+.filter-dropdown{
+display:none;
+position:absolute;
+background:white;
+color:black;
+top:35px;
+left:0;
+z-index:1000;
+border:1px solid #ccc;
+max-height:200px;
+overflow:auto;
+padding:5px;
+}
+
+.filter-dropdown div{
+padding:4px;
+cursor:pointer;
+font-size:11px;
+}
+
+.filter-dropdown div:hover{
+background:#f1f1f1;
 }
 
 td{
@@ -118,7 +137,6 @@ background:#f9fafb;
 <table id="dataTable">
 <thead>
 <tr id="headerRow"></tr>
-<tr id="filterRow" class="filter-row"></tr>
 </thead>
 <tbody></tbody>
 </table>
@@ -132,18 +150,16 @@ const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa
 
 let fullData=[];
 let headers=[];
+let activeFilters={};
 
 Papa.parse(sheetURL,{
 download:true,
 header:true,
 skipEmptyLines:true,
 complete:function(results){
-
 fullData=results.data.filter(r=>r["Job Card No"]);
 headers=Object.keys(fullData[0]);
-
 createHeaders();
-createFilters();
 createCards();
 applyFilters();
 }
@@ -151,36 +167,49 @@ applyFilters();
 
 function createHeaders(){
 let headerRow=document.getElementById("headerRow");
-headers.forEach(h=>{
-let th=document.createElement("th");
-th.innerText=h;
-headerRow.appendChild(th);
-});
-}
-
-function createFilters(){
-let filterRow=document.getElementById("filterRow");
 
 headers.forEach(h=>{
 let th=document.createElement("th");
+th.innerHTML=`${h} <span class="filter-icon">🔽</span>`;
 
-let select=document.createElement("select");
-select.setAttribute("data-column",h);
-select.innerHTML=`<option value="">All</option>`;
+let dropdown=document.createElement("div");
+dropdown.className="filter-dropdown";
 
 let unique=[...new Set(fullData.map(r=>r[h]))].filter(v=>v);
 
+let allOption=document.createElement("div");
+allOption.innerText="(All)";
+allOption.onclick=()=>{
+delete activeFilters[h];
+dropdown.style.display="none";
+applyFilters();
+};
+dropdown.appendChild(allOption);
+
 unique.forEach(val=>{
-let opt=document.createElement("option");
-opt.value=val;
-opt.text=val;
-select.appendChild(opt);
+let option=document.createElement("div");
+option.innerText=val;
+option.onclick=()=>{
+activeFilters[h]=val;
+dropdown.style.display="none";
+applyFilters();
+};
+dropdown.appendChild(option);
 });
 
-select.addEventListener("change",applyFilters);
+th.appendChild(dropdown);
 
-th.appendChild(select);
-filterRow.appendChild(th);
+th.querySelector(".filter-icon").onclick=(e)=>{
+e.stopPropagation();
+document.querySelectorAll(".filter-dropdown").forEach(d=>d.style.display="none");
+dropdown.style.display="block";
+};
+
+headerRow.appendChild(th);
+});
+
+document.addEventListener("click",()=>{
+document.querySelectorAll(".filter-dropdown").forEach(d=>d.style.display="none");
 });
 }
 
@@ -193,9 +222,9 @@ let kpiColumns=[
 "Qc Fail Qty","Amount"
 ];
 
-let colors=["blue","green","teal","purple","orange",
-"red","purple","orange","teal",
-"green","blue","purple","red",
+let colors=["blue","green","purple","orange","red",
+"purple","red","orange","green",
+"blue","purple","orange","red",
 "green","dark"];
 
 let container=document.getElementById("cardsContainer");
@@ -241,21 +270,20 @@ if(el){el.innerText=totals[key];}
 function applyFilters(){
 
 let search=document.getElementById("searchInput").value.toLowerCase();
-let selects=document.querySelectorAll(".filter-row select");
 
 let filtered=fullData.filter(row=>{
 
 let matchSearch=Object.values(row).join(" ").toLowerCase().includes(search);
 
-let matchFilter=true;
+let matchColumn=true;
 
-selects.forEach(select=>{
-let col=select.getAttribute("data-column");
-let val=select.value;
-if(val && row[col]!=val){matchFilter=false;}
+Object.keys(activeFilters).forEach(col=>{
+if(row[col]!=activeFilters[col]){
+matchColumn=false;
+}
 });
 
-return matchSearch && matchFilter;
+return matchSearch && matchColumn;
 });
 
 renderTable(filtered);
