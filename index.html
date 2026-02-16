@@ -5,29 +5,33 @@
 <title>Gee Impex Live Production Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<!-- jQuery FIRST -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
+<!-- DataTables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+<!-- CSV Parser -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#eef2f7;}
+body{margin:0;font-family:Segoe UI;background:#f4f6f9;}
 
 .header{
 background:#000;
-color:white;
-padding:14px;
+color:#fff;
+padding:15px;
 text-align:center;
 position:relative;
+font-size:22px;
+font-weight:600;
 }
-
-.title{font-size:22px;font-weight:600;}
 
 .clock{
 position:absolute;
@@ -38,6 +42,19 @@ font-size:13px;
 
 .container{padding:15px;}
 
+.top-controls{
+margin-bottom:15px;
+}
+
+button{
+padding:6px 12px;
+background:#111827;
+color:#fff;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
 .cards{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
@@ -46,15 +63,16 @@ margin-bottom:20px;
 }
 
 .card{
-padding:14px;
+padding:15px;
 border-radius:10px;
-color:white;
+color:#fff;
 text-align:center;
-box-shadow:0 4px 12px rgba(0,0,0,0.2);
+font-weight:600;
+box-shadow:0 3px 8px rgba(0,0,0,0.2);
 }
 
-.card h4{margin:0;font-size:12px;}
-.card h2{margin:6px 0 0;font-size:18px;font-weight:700;}
+.card h4{margin:0;font-size:13px;}
+.card h2{margin:6px 0 0;font-size:18px;}
 
 .color0{background:#2563eb;}
 .color1{background:#16a34a;}
@@ -63,34 +81,30 @@ box-shadow:0 4px 12px rgba(0,0,0,0.2);
 .color4{background:#7c3aed;}
 .color5{background:#111827;}
 
+table.dataTable thead th{
+background:#000;
+color:#fff;
+position:relative;
+}
+
+.filter-icon{
+cursor:pointer;
+margin-left:5px;
+color:#ffc107;
+font-size:12px;
+}
+
 .footer{
 background:#000;
-color:white;
+color:#fff;
 text-align:center;
 padding:10px;
 margin-top:20px;
 font-size:13px;
 }
 
-table.dataTable thead th{
-background:#000;
-color:white;
-position:relative;
-}
-
-.filter-icon{
-cursor:pointer;
-font-size:12px;
-margin-left:5px;
-color:#ffc107;
-}
-
-.dataTables_wrapper .dataTables_filter{
-display:none; /* Hide global search */
-}
-
 @media print{
-.clock,.dt-buttons,.dataTables_length,.dataTables_paginate{display:none;}
+.clock,.top-controls,.dt-buttons,.dataTables_filter,.dataTables_length,.dataTables_paginate{display:none;}
 }
 </style>
 </head>
@@ -98,11 +112,15 @@ display:none; /* Hide global search */
 <body>
 
 <div class="header">
-<div class="title">Gee Impex Live Production Dashboard</div>
+Gee Impex Live Production Dashboard
 <div class="clock" id="clock"></div>
 </div>
 
 <div class="container">
+
+<div class="top-controls">
+<button onclick="resetFilters()">Reset Filters</button>
+</div>
 
 <div class="cards" id="cardsContainer"></div>
 
@@ -132,14 +150,15 @@ updateClock();
 
 /* LOAD DATA */
 function loadData(){
+
 Papa.parse(sheetURL,{
 download:true,
 header:true,
 skipEmptyLines:true,
-complete:function(res){
+complete:function(results){
 
-let data=res.data.filter(r=>Object.values(r).some(v=>v));
-if(data.length==0) return;
+let data=results.data.filter(r=>Object.values(r).some(v=>v));
+if(data.length===0) return;
 
 let headers=Object.keys(data[0]);
 
@@ -151,23 +170,29 @@ return data.some(r=>!isNaN(parseFloat(r[h])));
 createCards(headers);
 
 if(table){
-table.clear().rows.add(data).draw();
-}else{
+table.destroy();
+$('#dataTable').empty();
+}
+
 table=$('#dataTable').DataTable({
 data:data,
 columns:headers.map(h=>({title:h,data:h})),
 scrollX:true,
 dom:'Bfrtip',
-buttons:['excel','print'],
-initComplete:function(){
-addColumnFilters(this.api());
-}
+buttons:['excel','print']
 });
-}
 
+addColumnFilters(table);
+
+table.on('draw',function(){
 updateCards(table.rows({search:'applied'}).data().toArray());
+});
+
+updateCards(data);
+
 }
 });
+
 }
 
 loadData();
@@ -192,36 +217,48 @@ data.forEach(r=>{
 let num=parseFloat(r[col]);
 if(!isNaN(num)) total+=num;
 });
-document.getElementById("kpi_"+col).innerText=total;
+let el=document.getElementById("kpi_"+col);
+if(el) el.innerText=total;
 });
 }
 
 /* COLUMN FILTER */
-function addColumnFilters(api){
-api.columns().every(function(){
+function addColumnFilters(table){
+
+table.columns().every(function(){
+
 let column=this;
 let header=$(column.header());
+header.find('.filter-icon').remove();
 
-let icon=$('<span class="filter-icon">⏷</span>');
+let icon=$('<span class="filter-icon">🔽</span>');
 header.append(icon);
 
 icon.on('click',function(e){
 e.stopPropagation();
+$('select.column-filter').remove();
 
-let select=$('<select multiple style="width:150px;"></select>')
+let select=$('<select multiple class="column-filter" style="width:150px;"></select>')
 .appendTo(header)
 .on('change',function(){
 let vals=$(this).val();
 let search=vals ? vals.join('|') : '';
 column.search(search,true,false).draw();
-updateCards(api.rows({search:'applied'}).data().toArray());
 });
 
 column.data().unique().sort().each(function(d){
 select.append('<option value="'+d+'">'+d+'</option>');
 });
 });
+
 });
+
+}
+
+/* RESET */
+function resetFilters(){
+table.search('').columns().search('').draw();
+$('select.column-filter').remove();
 }
 
 </script>
