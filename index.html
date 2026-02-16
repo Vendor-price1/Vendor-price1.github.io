@@ -6,14 +6,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
-
 body{
   margin:0;
   font-family:Segoe UI;
   background:#eef2f7;
 }
-
-/* HEADER */
 .header{
   background:#0f172a;
   color:white;
@@ -22,92 +19,79 @@ body{
   font-weight:600;
   text-align:center;
 }
+.container{padding:20px;}
 
-/* SEARCH BAR */
-.search-box{
-  text-align:right;
+.top-bar{
+  display:flex;
+  justify-content:space-between;
   margin-bottom:15px;
 }
-.search-box input{
-  padding:8px 12px;
+input, select{
+  padding:6px 10px;
   border-radius:6px;
   border:1px solid #ccc;
-  width:220px;
 }
+button{
+  padding:7px 14px;
+  border:none;
+  border-radius:6px;
+  background:#111827;
+  color:white;
+  cursor:pointer;
+}
+button:hover{background:#000;}
 
-/* CARDS */
 .cards{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
   gap:15px;
   margin-bottom:25px;
 }
-
 .card{
   padding:20px;
   border-radius:14px;
   color:white;
   box-shadow:0 6px 18px rgba(0,0,0,0.15);
-  transition:0.3s;
 }
-.card:hover{
-  transform:translateY(-4px);
-}
+.card h4{margin:0;font-size:13px;}
+.card h2{margin:8px 0 0;font-size:24px;font-weight:700;}
 
-.card h4{
-  margin:0;
-  font-size:13px;
-  opacity:0.9;
-}
-.card h2{
-  margin:8px 0 0;
-  font-size:24px;
-  font-weight:700;
-}
-
-/* Gradient Colors */
-.blue{background:linear-gradient(135deg,#2563eb,#1e40af);}
+.blue{background:linear-gradient(135deg,#2563eb,#1e3a8a);}
 .green{background:linear-gradient(135deg,#16a34a,#065f46);}
 .orange{background:linear-gradient(135deg,#f97316,#c2410c);}
 .red{background:linear-gradient(135deg,#dc2626,#7f1d1d);}
 .purple{background:linear-gradient(135deg,#7c3aed,#4c1d95);}
-.teal{background:linear-gradient(135deg,#0ea5e9,#155e75);}
-.pink{background:linear-gradient(135deg,#db2777,#831843);}
-.brown{background:linear-gradient(135deg,#92400e,#451a03);}
-.dark{background:linear-gradient(135deg,#111827,#000000);}
+.dark{background:linear-gradient(135deg,#111827,#000);}
 
-/* TABLE */
 .table-container{
   background:white;
   border-radius:12px;
   overflow:auto;
   box-shadow:0 6px 18px rgba(0,0,0,0.1);
 }
-
 table{
   width:100%;
   border-collapse:collapse;
   font-size:13px;
 }
-
 th{
   background:#0f172a;
   color:white;
-  padding:10px;
+  padding:8px;
   position:sticky;
   top:0;
 }
-
 td{
   padding:8px;
   text-align:center;
   border-bottom:1px solid #eee;
 }
+tr:nth-child(even){background:#f9fafb;}
 
-tr:nth-child(even){
-  background:#f9fafb;
+@media print{
+  .top-bar{display:none;}
+  body{background:white;}
 }
-
 </style>
 </head>
 
@@ -115,26 +99,24 @@ tr:nth-child(even){
 
 <div class="header">Production Dashboard</div>
 
-<div style="padding:20px;">
+<div class="container">
 
-<div class="search-box">
-  <input type="text" id="searchInput" placeholder="Search...">
+<div class="top-bar">
+  <div>
+    <input type="text" id="searchInput" placeholder="Search...">
+    <select id="brandFilter">
+      <option value="">All Brands</option>
+    </select>
+  </div>
+  <button onclick="window.print()">Print</button>
 </div>
 
 <div class="cards">
   <div class="card blue"><h4>PO Qty</h4><h2 id="poQty">0</h2></div>
   <div class="card green"><h4>Cut Qty</h4><h2 id="cutQty">0</h2></div>
-  <div class="card teal"><h4>Line Qty</h4><h2 id="lineQty">0</h2></div>
   <div class="card purple"><h4>Finished Qty</h4><h2 id="finQty">0</h2></div>
   <div class="card orange"><h4>Packed</h4><h2 id="packedQty">0</h2></div>
-  <div class="card pink"><h4>Gpt+Cat+Sam</h4><h2 id="gcsQty">0</h2></div>
   <div class="card red"><h4>Rejection</h4><h2 id="rejQty">0</h2></div>
-  <div class="card brown"><h4>PO Pending</h4><h2 id="poPendQty">0</h2></div>
-  <div class="card teal"><h4>Cut Pending</h4><h2 id="cutPendQty">0</h2></div>
-  <div class="card green"><h4>GRN Qty</h4><h2 id="grnQty">0</h2></div>
-  <div class="card pink"><h4>Amm Qty</h4><h2 id="ammQty">0</h2></div>
-  <div class="card red"><h4>Short Qty</h4><h2 id="shortQty">0</h2></div>
-  <div class="card purple"><h4>QC Fail Qty</h4><h2 id="qcQty">0</h2></div>
   <div class="card dark"><h4>Total Amount</h4><h2 id="totalAmount">0</h2></div>
 </div>
 
@@ -147,21 +129,9 @@ tr:nth-child(even){
 <th>Vendor Article Number</th>
 <th>Po Qty</th>
 <th>Cut Qty</th>
-<th>Line Qty</th>
 <th>Finished Qty</th>
 <th>Packed</th>
-<th>Gpt+Cat+Sam</th>
 <th>Rejection</th>
-<th>Excess</th>
-<th>Po Pendng</th>
-<th>Cut Pending</th>
-<th>Grn Qty</th>
-<th>Amm Qty</th>
-<th>Short Qty</th>
-<th>Qc Fail Qty</th>
-<th>Qty Received Date</th>
-<th>Remark</th>
-<th>Rate</th>
 <th>Amount</th>
 </tr>
 </thead>
@@ -173,71 +143,84 @@ tr:nth-child(even){
 
 <script>
 
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?output=csv";
+const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?output=csv";
+
+let fullData=[];
 
 Papa.parse(sheetURL,{
  download:true,
  header:true,
  complete:function(results){
-
-   let data = results.data;
-   let totals = {po:0,cut:0,line:0,fin:0,packed:0,gcs:0,rej:0,poPend:0,cutPend:0,grn:0,amm:0,short:0,qc:0,amount:0};
-
-   let tbody=document.querySelector("#dataTable tbody");
-   tbody.innerHTML="";
-
-   data.forEach(row=>{
-     if(!row["Job Card No"]) return;
-
-     let tr="<tr>";
-     for(let key in row){
-       tr+="<td>"+row[key]+"</td>";
-     }
-     tr+="</tr>";
-     tbody.innerHTML+=tr;
-
-     totals.po+=Number(row["Po Qty"])||0;
-     totals.cut+=Number(row["Cut Qty"])||0;
-     totals.line+=Number(row["Line Qty"])||0;
-     totals.fin+=Number(row["Finished Qty"])||0;
-     totals.packed+=Number(row["Packed"])||0;
-     totals.gcs+=Number(row["Gpt+Cat+Sam"])||0;
-     totals.rej+=Number(row["Rejection"])||0;
-     totals.poPend+=Number(row["Po Pendng"])||0;
-     totals.cutPend+=Number(row["Cut Pending"])||0;
-     totals.grn+=Number(row["Grn Qty"])||0;
-     totals.amm+=Number(row["Amm Qty"])||0;
-     totals.short+=Number(row["Short Qty"])||0;
-     totals.qc+=Number(row["Qc Fail Qty"])||0;
-     totals.amount+=Number(row["Amount"])||0;
-   });
-
-   document.getElementById("poQty").innerText=totals.po;
-   document.getElementById("cutQty").innerText=totals.cut;
-   document.getElementById("lineQty").innerText=totals.line;
-   document.getElementById("finQty").innerText=totals.fin;
-   document.getElementById("packedQty").innerText=totals.packed;
-   document.getElementById("gcsQty").innerText=totals.gcs;
-   document.getElementById("rejQty").innerText=totals.rej;
-   document.getElementById("poPendQty").innerText=totals.poPend;
-   document.getElementById("cutPendQty").innerText=totals.cutPend;
-   document.getElementById("grnQty").innerText=totals.grn;
-   document.getElementById("ammQty").innerText=totals.amm;
-   document.getElementById("shortQty").innerText=totals.short;
-   document.getElementById("qcQty").innerText=totals.qc;
-   document.getElementById("totalAmount").innerText=totals.amount;
-
+   fullData=results.data.filter(r=>r["Job Card No"]);
+   populateBrandFilter();
+   renderTable(fullData);
  }
 });
 
-// SEARCH FILTER
-document.getElementById("searchInput").addEventListener("keyup",function(){
- let filter=this.value.toLowerCase();
- let rows=document.querySelectorAll("#dataTable tbody tr");
- rows.forEach(row=>{
-   row.style.display=row.innerText.toLowerCase().includes(filter)?"":"none";
+function populateBrandFilter(){
+ let brands=[...new Set(fullData.map(r=>r["Brand Name"]))];
+ let select=document.getElementById("brandFilter");
+ brands.forEach(b=>{
+   let opt=document.createElement("option");
+   opt.value=b;
+   opt.text=b;
+   select.appendChild(opt);
  });
-});
+}
+
+function renderTable(data){
+
+ let tbody=document.querySelector("#dataTable tbody");
+ tbody.innerHTML="";
+
+ let totals={po:0,cut:0,fin:0,packed:0,rej:0,amount:0};
+
+ data.forEach(row=>{
+   let tr=`<tr>
+   <td>${row["Job Card No"]}</td>
+   <td>${row["Brand Name"]}</td>
+   <td>${row["Vendor Article Number"]}</td>
+   <td>${row["Po Qty"]}</td>
+   <td>${row["Cut Qty"]}</td>
+   <td>${row["Finished Qty"]}</td>
+   <td>${row["Packed"]}</td>
+   <td>${row["Rejection"]}</td>
+   <td>${row["Amount"]}</td>
+   </tr>`;
+   tbody.innerHTML+=tr;
+
+   totals.po+=Number(row["Po Qty"])||0;
+   totals.cut+=Number(row["Cut Qty"])||0;
+   totals.fin+=Number(row["Finished Qty"])||0;
+   totals.packed+=Number(row["Packed"])||0;
+   totals.rej+=Number(row["Rejection"])||0;
+   totals.amount+=Number(row["Amount"])||0;
+ });
+
+ document.getElementById("poQty").innerText=totals.po;
+ document.getElementById("cutQty").innerText=totals.cut;
+ document.getElementById("finQty").innerText=totals.fin;
+ document.getElementById("packedQty").innerText=totals.packed;
+ document.getElementById("rejQty").innerText=totals.rej;
+ document.getElementById("totalAmount").innerText=totals.amount;
+}
+
+function applyFilters(){
+
+ let search=document.getElementById("searchInput").value.toLowerCase();
+ let brand=document.getElementById("brandFilter").value;
+
+ let filtered=fullData.filter(row=>{
+   let matchSearch=Object.values(row).join(" ").toLowerCase().includes(search);
+   let matchBrand=brand?row["Brand Name"]===brand:true;
+   return matchSearch && matchBrand;
+ });
+
+ renderTable(filtered);
+}
+
+document.getElementById("searchInput").addEventListener("keyup",applyFilters);
+document.getElementById("brandFilter").addEventListener("change",applyFilters);
 
 </script>
 
