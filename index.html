@@ -1,149 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Gee Impex Production Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
-<style>
-body{margin:0;font-family:Segoe UI;background:#eef2f7;}
-.header{background:#0f172a;color:white;padding:18px;text-align:center;font-size:22px;font-weight:600;}
-.container{padding:20px;}
-
-.top-bar{
-display:flex;
-justify-content:space-between;
-margin-bottom:15px;
-}
-
-input{
-padding:6px 10px;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-button{
-padding:7px 14px;
-border:none;
-border-radius:6px;
-background:#111827;
-color:white;
-cursor:pointer;
-}
-
-.cards{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:12px;
-margin-bottom:20px;
-}
-
-.card{
-padding:15px;
-border-radius:12px;
-color:white;
-box-shadow:0 5px 15px rgba(0,0,0,0.15);
-}
-.card h4{margin:0;font-size:12px;}
-.card h2{margin:6px 0 0;font-size:18px;font-weight:700;}
-
-.blue{background:#2563eb;}
-.green{background:#16a34a;}
-.orange{background:#f97316;}
-.red{background:#dc2626;}
-.purple{background:#7c3aed;}
-.dark{background:#111827;}
-
-.table-container{
-background:white;
-border-radius:10px;
-overflow:auto;
-box-shadow:0 5px 15px rgba(0,0,0,0.1);
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-font-size:12px;
-}
-
-th{
-background:#0f172a;
-color:white;
-padding:8px;
-position:sticky;
-top:0;
-text-align:center;
-position:relative;
-}
-
-th .filter-icon{
-cursor:pointer;
-margin-left:6px;
-font-size:11px;
-}
-
-.filter-dropdown{
-display:none;
-position:absolute;
-background:white;
-color:black;
-top:35px;
-left:0;
-z-index:1000;
-border:1px solid #ccc;
-max-height:200px;
-overflow:auto;
-padding:5px;
-}
-
-.filter-dropdown div{
-padding:4px;
-cursor:pointer;
-font-size:11px;
-}
-
-.filter-dropdown div:hover{
-background:#f1f1f1;
-}
-
-td{
-padding:8px;
-text-align:center;
-border-bottom:1px solid #eee;
-}
-
-tr:nth-child(even){
-background:#f9fafb;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="header">Production Dashboard</div>
-
-<div class="container">
-
-<div class="top-bar">
-<input type="text" id="searchInput" placeholder="Search...">
-<button onclick="window.print()">Print</button>
-</div>
-
-<div class="cards" id="cardsContainer"></div>
-
-<div class="table-container">
-<table id="dataTable">
-<thead>
-<tr id="headerRow"></tr>
-</thead>
-<tbody></tbody>
-</table>
-</div>
-
-</div>
-
 <script>
 
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
@@ -157,85 +11,28 @@ download:true,
 header:true,
 skipEmptyLines:true,
 complete:function(results){
-fullData=results.data.filter(r=>r["Job Card No"]);
+
+if(!results.data || results.data.length===0){
+document.body.innerHTML="<h2 style='text-align:center;margin-top:50px'>No Data Found</h2>";
+return;
+}
+
+fullData=results.data.filter(row=>{
+return Object.values(row).some(v=>v && v.trim()!=="");
+});
+
+if(fullData.length===0){
+document.body.innerHTML="<h2 style='text-align:center;margin-top:50px'>Sheet Empty</h2>";
+return;
+}
+
 headers=Object.keys(fullData[0]);
+
 createHeaders();
 createCards();
 applyFilters();
 }
 });
-
-function createHeaders(){
-let headerRow=document.getElementById("headerRow");
-
-headers.forEach(h=>{
-let th=document.createElement("th");
-th.innerHTML=`${h} <span class="filter-icon">🔽</span>`;
-
-let dropdown=document.createElement("div");
-dropdown.className="filter-dropdown";
-
-let unique=[...new Set(fullData.map(r=>r[h]))].filter(v=>v);
-
-let allOption=document.createElement("div");
-allOption.innerText="(All)";
-allOption.onclick=()=>{
-delete activeFilters[h];
-dropdown.style.display="none";
-applyFilters();
-};
-dropdown.appendChild(allOption);
-
-unique.forEach(val=>{
-let option=document.createElement("div");
-option.innerText=val;
-option.onclick=()=>{
-activeFilters[h]=val;
-dropdown.style.display="none";
-applyFilters();
-};
-dropdown.appendChild(option);
-});
-
-th.appendChild(dropdown);
-
-th.querySelector(".filter-icon").onclick=(e)=>{
-e.stopPropagation();
-document.querySelectorAll(".filter-dropdown").forEach(d=>d.style.display="none");
-dropdown.style.display="block";
-};
-
-headerRow.appendChild(th);
-});
-
-document.addEventListener("click",()=>{
-document.querySelectorAll(".filter-dropdown").forEach(d=>d.style.display="none");
-});
-}
-
-function createCards(){
-
-let kpiColumns=[
-"Po Qty","Cut Qty","Line Qty","Finished Qty","Packed",
-"Gpt+Cat+Sam","Rejection","Excess","Po Pendng",
-"Cut Pending","Grn Qty","Amm Qty","Short Qty",
-"Qc Fail Qty","Amount"
-];
-
-let colors=["blue","green","purple","orange","red",
-"purple","red","orange","green",
-"blue","purple","orange","red",
-"green","dark"];
-
-let container=document.getElementById("cardsContainer");
-
-kpiColumns.forEach((col,i)=>{
-let div=document.createElement("div");
-div.className="card "+colors[i];
-div.innerHTML=`<h4>${col}</h4><h2 id="${col.replace(/\s/g,'')}">0</h2>`;
-container.appendChild(div);
-});
-}
 
 function renderTable(data){
 
@@ -247,52 +44,26 @@ let totals={};
 data.forEach(row=>{
 
 let tr="<tr>";
-headers.forEach(h=>{
-tr+=`<td>${row[h]||""}</td>`;
-});
-tr+="</tr>";
-tbody.innerHTML+=tr;
 
 headers.forEach(h=>{
-if(!isNaN(row[h]) && row[h]!=""){
-totals[h]=(totals[h]||0)+Number(row[h]);
+tr+=`<td>${row[h]||""}</td>`;
+
+let val=parseFloat(row[h]);
+if(!isNaN(val)){
+totals[h]=(totals[h]||0)+val;
 }
 });
+
+tr+="</tr>";
+tbody.innerHTML+=tr;
 });
 
 Object.keys(totals).forEach(key=>{
 let id=key.replace(/\s/g,'');
 let el=document.getElementById(id);
-if(el){el.innerText=totals[key];}
-});
-}
-
-function applyFilters(){
-
-let search=document.getElementById("searchInput").value.toLowerCase();
-
-let filtered=fullData.filter(row=>{
-
-let matchSearch=Object.values(row).join(" ").toLowerCase().includes(search);
-
-let matchColumn=true;
-
-Object.keys(activeFilters).forEach(col=>{
-if(row[col]!=activeFilters[col]){
-matchColumn=false;
+if(el){
+el.innerText=totals[key];
 }
 });
-
-return matchSearch && matchColumn;
-});
-
-renderTable(filtered);
 }
-
-document.getElementById("searchInput").addEventListener("keyup",applyFilters);
-
 </script>
-
-</body>
-</html>
-
