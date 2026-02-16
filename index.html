@@ -10,13 +10,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-margin:0;
-font-family:Segoe UI;
-background:#eef2f7;
-}
+body{margin:0;font-family:Segoe UI;background:#eef2f7;}
 
-/* HEADER */
 .header{
 background:#000;
 color:white;
@@ -25,10 +20,7 @@ text-align:center;
 position:relative;
 }
 
-.title{
-font-size:22px;
-font-weight:600;
-}
+.title{font-size:22px;font-weight:600;}
 
 .clock{
 position:absolute;
@@ -37,15 +29,14 @@ top:15px;
 font-size:14px;
 }
 
-/* CONTAINER */
-.container{ padding:15px; }
+.container{padding:15px;}
 
-/* BUTTON BAR */
 .top-bar{
 display:flex;
 justify-content:flex-end;
 gap:10px;
 margin-bottom:15px;
+flex-wrap:wrap;
 }
 
 button{
@@ -57,7 +48,6 @@ color:white;
 cursor:pointer;
 }
 
-/* CARDS */
 .cards{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -76,14 +66,13 @@ box-shadow:0 4px 10px rgba(0,0,0,0.2);
 .card h4{margin:0;font-size:12px;}
 .card h2{margin:6px 0 0;font-size:18px;font-weight:700;}
 
-.colors-0{background:#2563eb;}
-.colors-1{background:#16a34a;}
-.colors-2{background:#f97316;}
-.colors-3{background:#dc2626;}
-.colors-4{background:#7c3aed;}
-.colors-5{background:#111827;}
+.color0{background:#2563eb;}
+.color1{background:#16a34a;}
+.color2{background:#f97316;}
+.color3{background:#dc2626;}
+.color4{background:#7c3aed;}
+.color5{background:#111827;}
 
-/* TABLE */
 .table-container{
 background:white;
 border-radius:10px;
@@ -115,9 +104,8 @@ text-align:center;
 border-bottom:1px solid #eee;
 }
 
-tr:nth-child(even){ background:#f9fafb; }
+tr:nth-child(even){background:#f9fafb;}
 
-/* FILTER BOX */
 .filter-box{
 position:absolute;
 background:white;
@@ -131,9 +119,8 @@ font-size:12px;
 box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 
-.filter-box label{ display:block; }
+.filter-box label{display:block;}
 
-/* FOOTER */
 .footer{
 background:#000;
 color:white;
@@ -143,7 +130,6 @@ margin-top:20px;
 font-size:13px;
 }
 
-/* PRINT */
 @media print{
 .top-bar,.clock,.filter-box,button{display:none;}
 }
@@ -186,10 +172,10 @@ Created by: Vijay Pandey
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 let fullData=[];
-let headers=[];
-let activeFilters={};
-let numericColumns=[];
 let filteredData=[];
+let headers=[];
+let numericColumns=[];
+let filters={};
 
 /* CLOCK */
 function updateClock(){
@@ -206,17 +192,12 @@ Papa.parse(sheetURL,{
 download:true,
 header:true,
 skipEmptyLines:true,
-complete:function(results){
+complete:function(res){
 
-fullData=results.data.filter(row=>
-Object.values(row).some(v=>v && v.trim()!=="")
-);
-
-if(fullData.length===0) return;
-
+fullData=res.data.filter(r=>Object.values(r).some(v=>v));
 headers=Object.keys(fullData[0]);
 
-detectNumericColumns();
+detectNumeric();
 createHeaders();
 createCards();
 applyFilters();
@@ -226,39 +207,37 @@ applyFilters();
 loadData();
 setInterval(loadData,60000);
 
-/* DETECT NUMERIC COLUMNS */
-function detectNumericColumns(){
+/* DETECT NUMERIC */
+function detectNumeric(){
 numericColumns=headers.filter(h=>{
-return fullData.some(row=>{
-let val=parseFloat(row[h]);
-return !isNaN(val);
-});
+return fullData.some(r=>!isNaN(parseFloat(r[h])));
 });
 }
 
 /* CREATE HEADERS */
 function createHeaders(){
-let headerRow=document.getElementById("headerRow");
-headerRow.innerHTML="";
+let row=document.getElementById("headerRow");
+row.innerHTML="";
 headers.forEach(h=>{
 let th=document.createElement("th");
 th.innerHTML=h+" ⏷";
-th.onclick=(e)=>openFilter(e,h);
-headerRow.appendChild(th);
+th.onclick=(e)=>showFilter(e,h);
+row.appendChild(th);
 });
 }
 
-/* OPEN FILTER */
-function openFilter(event,column){
+/* SHOW FILTER */
+function showFilter(e,column){
 
 let box=document.getElementById("filterBox");
 box.innerHTML="";
 
-let values=[...new Set(fullData.map(r=>r[column]||""))];
+let values=[...new Set(fullData.map(r=>String(r[column]||"").trim()))];
+values.sort();
 
-values.forEach(val=>{
+values.forEach(v=>{
 let label=document.createElement("label");
-label.innerHTML=`<input type="checkbox" value="${val}"> ${val}`;
+label.innerHTML=`<input type="checkbox" value="${v}"> ${v}`;
 box.appendChild(label);
 });
 
@@ -266,27 +245,38 @@ let btn=document.createElement("button");
 btn.innerText="Apply";
 btn.style.marginTop="5px";
 btn.onclick=function(){
+
 let selected=[...box.querySelectorAll("input:checked")]
 .map(i=>i.value);
-activeFilters[column]=selected;
+
+if(selected.length===0){
+delete filters[column];
+}else{
+filters[column]=selected;
+}
+
 box.style.display="none";
 applyFilters();
 };
+
 box.appendChild(btn);
 
 box.style.display="block";
-box.style.left=event.pageX+"px";
-box.style.top=event.pageY+"px";
+box.style.left=e.pageX+"px";
+box.style.top=e.pageY+"px";
 }
 
-/* APPLY FILTER */
+/* APPLY FILTERS */
 function applyFilters(){
 
 filteredData=fullData.filter(row=>{
-return Object.keys(activeFilters).every(col=>{
-if(!activeFilters[col] || activeFilters[col].length===0) return true;
-return activeFilters[col].includes(row[col]||"");
-});
+for(let col in filters){
+let cell=String(row[col]||"").trim();
+if(!filters[col].includes(cell)){
+return false;
+}
+}
+return true;
 });
 
 renderTable();
@@ -295,46 +285,44 @@ updateCards();
 
 /* RESET */
 function resetFilters(){
-activeFilters={};
+filters={};
 applyFilters();
 }
 
-/* RENDER TABLE */
+/* TABLE */
 function renderTable(){
 let tbody=document.querySelector("#dataTable tbody");
 tbody.innerHTML="";
 
-filteredData.forEach(row=>{
+filteredData.forEach(r=>{
 let tr="<tr>";
 headers.forEach(h=>{
-tr+=`<td>${row[h]||""}</td>`;
+tr+=`<td>${r[h]||""}</td>`;
 });
 tr+="</tr>";
 tbody.innerHTML+=tr;
 });
 }
 
-/* CREATE KPI CARDS */
+/* CARDS */
 function createCards(){
 let container=document.getElementById("cardsContainer");
 container.innerHTML="";
 
 numericColumns.forEach((col,i)=>{
 let div=document.createElement("div");
-div.className="card colors-"+(i%6);
+div.className="card color"+(i%6);
 div.innerHTML=`<h4>${col}</h4><h2 id="kpi_${i}">0</h2>`;
 container.appendChild(div);
 });
 }
 
-/* UPDATE KPI TOTALS */
 function updateCards(){
-
 numericColumns.forEach((col,i)=>{
 let total=0;
-filteredData.forEach(row=>{
-let val=parseFloat(row[col]);
-if(!isNaN(val)) total+=val;
+filteredData.forEach(r=>{
+let num=parseFloat(r[col]);
+if(!isNaN(num)) total+=num;
 });
 document.getElementById("kpi_"+i).innerText=total;
 });
