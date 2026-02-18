@@ -23,18 +23,23 @@ z-index:9999;
 background:#111827;padding:30px;border-radius:10px;width:320px;
 box-shadow:0 0 25px black;text-align:center;
 }
-.login-card input{
-width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;
-}
-.login-card button{
-width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;
-font-weight:bold;cursor:pointer;
-}
+.login-card input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;}
+.login-card button{width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
 .login-card h2{color:#38bdf8;}
 
 /* DASHBOARD */
 .dashboard{padding:15px;display:none;}
 h1{text-align:center;color:#38bdf8;}
+
+/* CONTROLS */
+.controls{margin-bottom:15px;}
+.controls input{
+padding:6px;width:200px;border-radius:4px;border:none;
+}
+.controls button{
+padding:6px 12px;margin-right:8px;border:none;border-radius:4px;
+background:#2563eb;color:white;cursor:pointer;
+}
 
 /* TABLE */
 table{
@@ -50,12 +55,10 @@ border:1px solid #ccc;
 padding:6px;
 text-align:center;
 }
-th{
-background:#111827;
-color:white;
-}
-.locked{
-background:#c7f9cc !important;
+th{background:#111827;color:white;}
+tfoot{
+background:#e5e7eb;
+font-weight:bold;
 }
 </style>
 </head>
@@ -77,9 +80,16 @@ background:#c7f9cc !important;
 <div class="dashboard" id="dashboard">
 <h1>Gee Impex Production Dashboard</h1>
 
+<div class="controls">
+<input type="text" id="searchInput" placeholder="Search..." onkeyup="searchTable()">
+<button onclick="printTable()">Print</button>
+<button onclick="exportExcel()">Export Excel</button>
+</div>
+
 <table id="dataTable">
 <thead></thead>
 <tbody></tbody>
+<tfoot></tfoot>
 </table>
 
 </div>
@@ -99,9 +109,6 @@ loginMsg.innerText="Wrong ID or Password!";
 }
 }
 
-// GOOGLE SCRIPT API (STATUS UPDATE)
-const API_URL="https://script.google.com/macros/s/AKfycbx3zgoMyJs6vXc9PQR0hHW27Hl2mhR_KI50sSBTqhpEucXKC2zU6Tj2ulGMEzNURm2Fxw/exec";
-
 // GOOGLE SHEET CSV
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
@@ -117,7 +124,7 @@ let bodyRows=rows.slice(1);
 // HEADER
 let thead="<tr>";
 headers.forEach(h=>{
-if(h=="Rate"||h=="Amount"||h=="Status") return; // REMOVE THESE
+if(h=="Rate"||h=="Amount"||h=="Status") return;
 thead+="<th>"+h+"</th>";
 });
 thead+="</tr>";
@@ -125,21 +132,84 @@ document.querySelector("thead").innerHTML=thead;
 
 // BODY
 let tbody="";
-bodyRows.forEach((row,index)=>{
+bodyRows.forEach(row=>{
 if(row.length<headers.length) return;
-tbody+=`<tr id="row${index}">`;
-
+tbody+="<tr>";
 row.forEach((cell,i)=>{
 let h=headers[i];
 if(h=="Rate"||h=="Amount"||h=="Status") return;
-tbody+=`<td>${cell}</td>`;
+tbody+="<td>"+cell+"</td>";
 });
-
 tbody+="</tr>";
 });
-
 document.querySelector("tbody").innerHTML=tbody;
+
+updateTotals();
 });
+}
+
+// TOTAL CALCULATION
+function updateTotals(){
+let totals=new Array(headers.length).fill(0);
+
+document.querySelectorAll("tbody tr").forEach(row=>{
+if(row.style.display==="none") return;
+let cells=row.querySelectorAll("td");
+let colIndex=0;
+
+headers.forEach((h,i)=>{
+if(h=="Rate"||h=="Amount"||h=="Status") return;
+let v=parseFloat(cells[colIndex]?.innerText);
+if(!isNaN(v)) totals[i]+=v;
+colIndex++;
+});
+});
+
+generateTotals(totals);
+}
+
+function generateTotals(totals){
+let html="<tr>";
+let colIndex=0;
+headers.forEach((h,i)=>{
+if(h=="Rate"||h=="Amount"||h=="Status") return;
+
+if(colIndex==0){
+html+="<td>Total</td>";
+}else{
+html+="<td>"+(totals[i]||"")+"</td>";
+}
+colIndex++;
+});
+html+="</tr>";
+document.querySelector("tfoot").innerHTML=html;
+}
+
+// SEARCH
+function searchTable(){
+let v=searchInput.value.toLowerCase();
+document.querySelectorAll("tbody tr").forEach(r=>{
+r.style.display=r.innerText.toLowerCase().includes(v)?"":"none";
+});
+updateTotals();
+}
+
+// PRINT
+function printTable(){
+let table=document.getElementById("dataTable").outerHTML;
+let w=window.open("");
+w.document.write("<h2>Gee Impex Production Report</h2>"+table);
+w.print();
+}
+
+// EXPORT EXCEL
+function exportExcel(){
+let table=document.getElementById("dataTable").outerHTML;
+let blob=new Blob([table],{type:"application/vnd.ms-excel"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="Gee_Impex_Data.xls";
+a.click();
 }
 </script>
 
