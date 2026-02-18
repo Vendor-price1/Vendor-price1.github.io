@@ -2,70 +2,115 @@
 <html>
 <head>
 <title>Gee Impex Dashboard</title>
+
 <style>
+/* BACKGROUND */
 body{
-font-family:Arial;
-background:#f5f5f5;
-padding:10px;
-}
-
-#loginBox{
-width:300px;
-margin:100px auto;
-background:#fff;
+font-family: 'Segoe UI', Arial;
+background: linear-gradient(135deg, #0f172a, #1e293b);
 padding:20px;
-border-radius:10px;
-box-shadow:0 0 10px #ccc;
+color:#111;
 }
 
+/* LOGIN BOX */
+#loginBox{
+width:320px;
+margin:120px auto;
+background:#ffffff;
+padding:25px;
+border-radius:12px;
+box-shadow:0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* INPUTS */
 input,button{
 width:100%;
-padding:8px;
-margin:5px 0;
+padding:10px;
+margin:6px 0;
+border-radius:6px;
+border:1px solid #ccc;
+font-size:14px;
 }
 
-#dashboard{display:none;}
+/* BUTTON */
+button{
+background:#2563eb;
+color:#fff;
+border:none;
+font-weight:bold;
+cursor:pointer;
+}
+button:hover{
+background:#1d4ed8;
+}
 
+/* DASHBOARD CARD */
+#dashboard{
+display:none;
+background:#f8fafc;
+padding:15px;
+border-radius:12px;
+box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* SEARCH BAR */
+#searchInput{
+width:250px;
+padding:8px;
+border-radius:6px;
+border:1px solid #ccc;
+margin-bottom:10px;
+}
+
+/* TABLE */
 table{
 width:100%;
 border-collapse:collapse;
-background:#fff;
+background:#ffffff;
+border-radius:10px;
+overflow:hidden;
 }
 
 th,td{
-border:1px solid #ddd;
-padding:6px;
+border:1px solid #e5e7eb;
+padding:8px;
 font-size:13px;
 }
 
 th{
-background:#333;
+background:#1f2937;
 color:#fff;
+font-weight:600;
 }
 
+/* TOTAL ROW */
 tfoot td{
 font-weight:bold;
-background:#eee;
+background:#e5e7eb;
 }
 
+/* KPI BOXES */
 .kpi{
 display:inline-block;
-padding:10px;
-margin:5px;
-background:#222;
+padding:12px 18px;
+margin:8px;
+background:linear-gradient(135deg,#2563eb,#9333ea);
 color:#fff;
-border-radius:6px;
-min-width:120px;
+border-radius:10px;
+min-width:140px;
 text-align:center;
+font-weight:bold;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
 </style>
+
 </head>
 
 <body>
 
-<!-- LOGIN BOX -->
+<!-- LOGIN -->
 <div id="loginBox">
-<h3>Gee Impex Login</h3>
+<h3>Gee Impex Secure Login</h3>
 <input id="loginId" placeholder="User ID">
 <input id="loginPass" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
@@ -74,7 +119,8 @@ text-align:center;
 
 <!-- DASHBOARD -->
 <div id="dashboard">
-<h2>Gee Impex Production Dashboard</h2>
+
+<h2>📊 Gee Impex Production Dashboard</h2>
 
 <input id="searchInput" placeholder="Search..." onkeyup="searchTable()">
 <button onclick="printTable()">Print</button>
@@ -87,6 +133,7 @@ text-align:center;
 <tbody></tbody>
 <tfoot></tfoot>
 </table>
+
 </div>
 
 <script>
@@ -104,7 +151,7 @@ loginMsg.innerText="Wrong ID or Password!";
 }
 }
 
-// GOOGLE SHEET CSV
+// GOOGLE SHEET CSV LINK
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 let headers=[];
@@ -165,6 +212,7 @@ generateTotals(totals);
 generateKPIs(totals);
 }
 
+// TOTAL ROW
 function generateTotals(totals){
 let html="<tr>";
 let colIndex=0;
@@ -183,6 +231,7 @@ html+="</tr>";
 document.querySelector("tfoot").innerHTML=html;
 }
 
+// KPI BOXES
 function generateKPIs(totals){
 let html="";
 headers.forEach((h,i)=>{
@@ -204,7 +253,7 @@ r.style.display=r.innerText.toLowerCase().includes(v)?"":"none";
 updateTotals();
 }
 
-// PRINT TABLE (PROPER FORMAT)
+// PRINT PROFESSIONAL TABLE
 function printTable(){
 let table=document.getElementById("dataTable").outerHTML;
 let w=window.open("");
