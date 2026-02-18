@@ -10,13 +10,47 @@ background:#0f172a;
 padding:15px;
 }
 
-/* TABLE WRAPPER */
+/* TITLE */
+h2{
+color:white;
+text-align:center;
+margin-bottom:8px;
+}
+
+/* DASHBOARD */
 #dashboard{
 background:#f8fafc;
-padding:10px;
-border-radius:10px;
+padding:12px;
+border-radius:12px;
 box-shadow:0 8px 25px rgba(0,0,0,.4);
 }
+
+/* BUTTON BAR */
+.toolbar{
+margin-bottom:8px;
+display:flex;
+gap:8px;
+align-items:center;
+}
+
+input{
+padding:6px 10px;
+border-radius:6px;
+border:1px solid #ccc;
+font-size:13px;
+}
+
+button{
+padding:6px 12px;
+border:none;
+border-radius:6px;
+background:#2563eb;
+color:white;
+font-weight:bold;
+cursor:pointer;
+font-size:13px;
+}
+button:hover{background:#1d4ed8}
 
 /* TABLE */
 table{
@@ -32,38 +66,27 @@ th{
 background:#0f172a;
 color:#fff;
 padding:8px;
-font-size:14px;   /* HEADER FONT */
+font-size:14px;
 border:1px solid #1f2937;
 text-align:center;
 position:sticky;
 top:0;
 }
 
-/* DATA CELL */
+/* DATA */
 td{
 border:1px solid #d1d5db;
 padding:6px;
-font-size:13px;   /* DATA FONT SLIGHTLY BIG */
+font-size:13px;
 }
 
-/* LEFT ALIGN TEXT COLUMNS */
-td.text-left{
-text-align:left;
-font-weight:500;
-}
-
-/* CENTER ALIGN NUMBERS */
-td.num{
-text-align:center;
-}
+/* ALIGNMENT */
+.text-left{ text-align:left; font-weight:500; }
+.num{ text-align:center; }
 
 /* STRIPED ROWS */
-tbody tr:nth-child(even){
-background:#f3f4f6;
-}
-tbody tr:hover{
-background:#dbeafe;
-}
+tbody tr:nth-child(even){background:#f3f4f6;}
+tbody tr:hover{background:#dbeafe;}
 
 /* TOTAL ROW */
 tfoot td{
@@ -73,57 +96,61 @@ font-weight:bold;
 border:1px solid #1f2937;
 font-size:14px;
 }
-
-/* TITLE */
-h2{
-color:white;
-text-align:center;
-margin-bottom:8px;
-}
 </style>
 </head>
 
 <body>
 
-<h2>📊 Gee Impex Production Report</h2>
+<h2>📊 Gee Impex Production Dashboard</h2>
 
 <div id="dashboard">
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+<input id="searchInput" placeholder="Search data..." onkeyup="searchTable()">
+<button onclick="printTable()">Print</button>
+<button onclick="exportExcel()">Export Excel</button>
+</div>
+
 <table id="dataTable">
 <thead></thead>
 <tbody></tbody>
 <tfoot></tfoot>
 </table>
+
 </div>
 
 <script>
 // GOOGLE SHEET CSV LINK
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let headers=[], rows=[];
+let headers=[], allRows=[], originalRows=[];
 
 // LOAD DATA
 fetch(sheetURL).then(r=>r.text()).then(data=>{
 let csv=data.split("\n").map(r=>r.split(","));
 headers=csv[0];
-rows=csv.slice(1);
+originalRows=csv.slice(1);
+allRows=[...originalRows];
 buildTable();
 });
 
 // BUILD TABLE
 function buildTable(){
 let thead="<tr>";
-headers.forEach(h=>{
-thead+="<th>"+h+"</th>";
-});
+headers.forEach(h=>thead+="<th>"+h+"</th>");
 thead+="</tr>";
 document.querySelector("thead").innerHTML=thead;
+renderRows(allRows);
+}
 
+// RENDER ROWS
+function renderRows(rows){
 let tbody="";
 rows.forEach(r=>{
 tbody+="<tr>";
 r.forEach((c,i)=>{
 let col=headers[i];
-
 let cls="num";
 if(col=="Job Card No" || col=="Brand Name" || col=="Vendor Article Number"){
 cls="text-left";
@@ -133,14 +160,12 @@ tbody+=`<td class="${cls}">${c}</td>`;
 tbody+="</tr>";
 });
 document.querySelector("tbody").innerHTML=tbody;
-
-calculateTotals();
+calculateTotals(rows);
 }
 
-// TOTAL ROW
-function calculateTotals(){
+// TOTALS
+function calculateTotals(rows){
 let totals=new Array(headers.length).fill(0);
-
 rows.forEach(r=>{
 r.forEach((c,i)=>{
 let v=parseFloat(c);
@@ -150,14 +175,40 @@ if(!isNaN(v)) totals[i]+=v;
 
 let html="<tr>";
 headers.forEach((h,i)=>{
-if(i==0){
-html+="<td class='text-left'>TOTAL</td>";
-}else{
-html+="<td class='num'>"+(totals[i]||"")+"</td>";
-}
+if(i==0) html+="<td class='text-left'>TOTAL</td>";
+else html+=`<td class='num'>${totals[i]||""}</td>`;
 });
 html+="</tr>";
 document.querySelector("tfoot").innerHTML=html;
+}
+
+// SEARCH FUNCTION
+function searchTable(){
+let v=searchInput.value.toLowerCase();
+if(v===""){
+allRows=[...originalRows];
+}else{
+allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
+}
+renderRows(allRows);
+}
+
+// PRINT FUNCTION
+function printTable(){
+let w=window.open("");
+w.document.write("<h2>Gee Impex Production Report</h2>");
+w.document.write(document.getElementById("dataTable").outerHTML);
+w.print();
+}
+
+// EXPORT EXCEL
+function exportExcel(){
+let table=document.getElementById("dataTable").outerHTML;
+let blob=new Blob([table],{type:"application/vnd.ms-excel"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="Gee_Impex_Report.xls";
+a.click();
 }
 </script>
 
