@@ -1,52 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Gee Impex Production Dashboard</title>
+<title>Gee Impex ERP Dashboard</title>
 
 <style>
 body{
+margin:0;
 font-family: "Segoe UI", Arial;
-background: linear-gradient(135deg,#0f172a,#1e293b);
-padding:20px;
+background:#f1f5f9;
 }
 
-/* LOGIN BOX */
-#loginBox{
-width:320px;
-margin:120px auto;
-background:#fff;
-padding:25px;
-border-radius:12px;
-box-shadow:0 10px 30px rgba(0,0,0,.4);
+/* SIDEBAR */
+#sidebar{
+width:220px;
+height:100vh;
+background:#0f172a;
+color:#fff;
+position:fixed;
+padding:15px;
 }
 
-/* INPUTS */
-input,button{
-padding:9px;
-margin:5px;
+#sidebar h3{
+text-align:center;
+margin-bottom:20px;
+}
+
+#sidebar a{
+display:block;
+color:#cbd5f5;
+text-decoration:none;
+padding:10px;
 border-radius:6px;
-border:1px solid #ccc;
-font-size:14px;
+margin:4px 0;
 }
-
-/* BUTTONS */
-button{
+#sidebar a:hover{
 background:#2563eb;
 color:#fff;
-border:none;
-font-weight:bold;
-cursor:pointer;
-padding:8px 12px;
 }
-button:hover{background:#1d4ed8}
 
-/* DASHBOARD */
-#dashboard{
-display:none;
-background:#f8fafc;
+/* MAIN CONTENT */
+#main{
+margin-left:240px;
 padding:15px;
-border-radius:12px;
-box-shadow:0 10px 25px rgba(0,0,0,.25);
+}
+
+/* TOP BAR */
+#topbar{
+background:#fff;
+padding:10px 15px;
+border-radius:8px;
+box-shadow:0 2px 10px rgba(0,0,0,.1);
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+/* KPI CARDS */
+.kpi{
+display:inline-block;
+background:#fff;
+padding:15px;
+margin:10px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,.1);
+min-width:150px;
+font-weight:bold;
 }
 
 /* TABLE */
@@ -54,78 +72,73 @@ table{
 width:100%;
 border-collapse:collapse;
 background:#fff;
-border-radius:8px;
+border-radius:10px;
 overflow:hidden;
+box-shadow:0 5px 15px rgba(0,0,0,.1);
 }
 
 th,td{
 border:1px solid #e5e7eb;
-padding:6px;
+padding:8px;
 font-size:12px;
 }
 
 th{
-background:#111827;
+background:#2563eb;
 color:#fff;
-}
-
-/* KPI */
-.kpi{
-display:inline-block;
-padding:10px 15px;
-margin:6px;
-background:linear-gradient(135deg,#2563eb,#9333ea);
-color:#fff;
-border-radius:8px;
-font-weight:bold;
 }
 
 /* PAGINATION */
 #pagination button{
-margin:2px;
 padding:5px 10px;
-background:#374151;
-color:#fff;
-border-radius:5px;
+margin:2px;
+background:#e5e7eb;
 border:none;
+border-radius:5px;
 }
 #pagination button.active{
 background:#2563eb;
+color:#fff;
 }
 
 /* FOOTER */
 footer{
 text-align:center;
-margin-top:10px;
 font-size:12px;
-color:#fff;
+margin-top:10px;
+color:#555;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginBox">
-<h3>Secure Login</h3>
-<input id="loginId" placeholder="User ID"><br>
-<input id="loginPass" type="password" placeholder="Password"><br>
-<button onclick="login()">Login</button>
-<div id="loginMsg" style="color:red"></div>
+<!-- SIDEBAR -->
+<div id="sidebar">
+<h3>Gee Impex ERP</h3>
+<a href="#">📊 Dashboard</a>
+<a href="#">📦 Orders</a>
+<a href="#">📑 Reports</a>
+<a href="#">🏭 Inventory</a>
+<a href="#">⚙ Settings</a>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard">
+<!-- MAIN AREA -->
+<div id="main">
 
-<h2 style="text-align:center;margin:5px 0;">📊 Gee Impex Production Dashboard</h2>
-
+<!-- TOP BAR -->
+<div id="topbar">
+<div><b>Gee Impex Production Dashboard</b></div>
+<div>
 <input id="searchInput" placeholder="Search..." onkeyup="searchTable()">
+<button onclick="logout()">Logout</button>
+</div>
+</div>
 
-<button onclick="printTable()">Print</button>
-<button onclick="exportExcel()">Excel</button>
-
+<!-- KPI -->
 <div id="kpis"></div>
 
+<!-- TABLE -->
 <table id="dataTable">
 <thead></thead>
 <tbody></tbody>
@@ -134,167 +147,84 @@ color:#fff;
 
 <div id="pagination"></div>
 
-</div>
-
 <footer>Created by: Vijay Pandey</footer>
 
+</div>
+
 <script>
-// ================= LOGIN SYSTEM =================
-const USER_ID="vijay";
-const USER_PASS="0011";
-
-// AUTO LOGIN IF SESSION EXISTS
-if(sessionStorage.getItem("loggedIn")){
-loginBox.style.display="none";
-dashboard.style.display="block";
-loadDashboard();
+// ===== SESSION LOGIN =====
+if(!sessionStorage.getItem("loggedIn")){
+alert("Please Login First");
 }
 
-function login(){
-if(loginId.value===USER_ID && loginPass.value===USER_PASS){
-sessionStorage.setItem("loggedIn","true"); // save session
-loginBox.style.display="none";
-dashboard.style.display="block";
-loadDashboard();
-}else{
-loginMsg.innerText="Wrong ID or Password!";
-}
+// LOGOUT
+function logout(){
+sessionStorage.removeItem("loggedIn");
+location.reload();
 }
 
-// ================= GOOGLE SHEET =================
+// GOOGLE SHEET CSV
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let headers=[];
-let allRows=[];        // filtered rows
-let originalRows=[];   // full backup rows
-let currentPage=1;
-let rowsPerPage=25;
+let headers=[], originalRows=[], allRows=[];
+let rowsPerPage=25, currentPage=1;
 
 // LOAD DATA
-function loadDashboard(){
 fetch(sheetURL).then(r=>r.text()).then(data=>{
 let rows=data.split("\n").map(r=>r.split(","));
 headers=rows[0].map(h=>h.trim());
 originalRows=rows.slice(1);
-allRows=[...originalRows]; // copy
-buildTable();
-});
-}
-
-// BUILD HEADER
-function buildTable(){
-let thead="<tr>";
-headers.forEach(h=>{
-if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
-thead+="<th>"+h+"</th>";
-});
-thead+="</tr>";
-document.querySelector("thead").innerHTML=thead;
-
+allRows=[...originalRows];
+buildHeader();
 showPage(1);
+});
+
+// HEADER
+function buildHeader(){
+let h="<tr>";
+headers.forEach(c=>{
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(c)) return;
+h+="<th>"+c+"</th>";
+});
+h+="</tr>";
+document.querySelector("thead").innerHTML=h;
 }
 
-// ================= PAGINATION =================
-function showPage(page){
-currentPage=page;
-let start=(page-1)*rowsPerPage;
-let end=start+rowsPerPage;
-let pageRows=allRows.slice(start,end);
+// PAGE LOAD
+function showPage(p){
+currentPage=p;
+let start=(p-1)*rowsPerPage;
+let pageRows=allRows.slice(start,start+rowsPerPage);
 
-let tbody="";
-pageRows.forEach(row=>{
-tbody+="<tr>";
-row.forEach((cell,i)=>{
-let h=headers[i];
-if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
-tbody+="<td>"+cell+"</td>";
+let b="";
+pageRows.forEach(r=>{
+b+="<tr>";
+r.forEach((c,i)=>{
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(headers[i])) return;
+b+="<td>"+c+"</td>";
 });
-tbody+="</tr>";
+b+="</tr>";
 });
-document.querySelector("tbody").innerHTML=tbody;
-
-updateTotals();
-createPagination();
+document.querySelector("tbody").innerHTML=b;
+makePagination();
 }
 
-function createPagination(){
+// PAGINATION
+function makePagination(){
 let totalPages=Math.ceil(allRows.length/rowsPerPage);
-let html="";
+let h="";
 for(let i=1;i<=totalPages;i++){
-html+=`<button class="${i==currentPage?'active':''}" onclick="showPage(${i})">${i}</button>`;
+h+=`<button class="${i==currentPage?'active':''}" onclick="showPage(${i})">${i}</button>`;
 }
-document.getElementById("pagination").innerHTML=html;
-}
-
-// ================= TOTALS & KPI =================
-function updateTotals(){
-let totals=new Array(headers.length).fill(0);
-
-document.querySelectorAll("tbody tr").forEach(row=>{
-let cells=row.querySelectorAll("td");
-let colIndex=0;
-headers.forEach((h,i)=>{
-if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
-let v=parseFloat(cells[colIndex]?.innerText);
-if(!isNaN(v)) totals[i]+=v;
-colIndex++;
-});
-});
-
-generateTotals(totals);
-generateKPIs(totals);
+pagination.innerHTML=h;
 }
 
-function generateTotals(totals){
-let html="<tr>";
-let colIndex=0;
-headers.forEach((h,i)=>{
-if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
-if(colIndex==0) html+="<td>Total</td>";
-else html+="<td>"+(totals[i]||"")+"</td>";
-colIndex++;
-});
-html+="</tr>";
-document.querySelector("tfoot").innerHTML=html;
-}
-
-function generateKPIs(totals){
-let html="";
-headers.forEach((h,i)=>{
-if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
-if(totals[i]) html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
-});
-kpis.innerHTML=html;
-}
-
-// ================= SEARCH FIX =================
+// SEARCH FIX
 function searchTable(){
 let v=searchInput.value.toLowerCase();
-
-if(v===""){
-allRows=[...originalRows]; // RESET FULL DATA
-}else{
-allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
-}
-
+if(v==="") allRows=[...originalRows];
+else allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
 showPage(1);
-}
-
-// ================= PRINT =================
-function printTable(){
-let w=window.open("");
-w.document.write(document.getElementById("dataTable").outerHTML);
-w.print();
-}
-
-// ================= EXPORT EXCEL =================
-function exportExcel(){
-let table=document.getElementById("dataTable").outerHTML;
-let blob=new Blob([table],{type:"application/vnd.ms-excel"});
-let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="Gee_Impex_Data.xls";
-a.click();
 }
 </script>
 
