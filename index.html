@@ -5,20 +5,6 @@
 <title>Gee Impex Live Production Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-
-<!-- DataTables -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
-<!-- Buttons -->
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-<!-- CSV -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
@@ -39,59 +25,14 @@ font-weight:600;
 
 .container{
 padding:15px;
-}
-
-/* ✅ FIXED GRID TABLE */
-table.dataTable{
-width:100% !important;
-border-collapse:collapse !important;
-table-layout:fixed !important;
-}
-
-table.dataTable th,
-table.dataTable td{
-border:1px solid #dcdcdc;
-padding:8px;
-text-align:center;
-vertical-align:middle;
-overflow:hidden;
-text-overflow:ellipsis;
-}
-
-table.dataTable thead th{
-background:#000;
-color:#fff;
-}
-
-table.dataTable tbody tr:nth-child(even){
-background:#f9f9f9;
-}
-
-table.dataTable tbody tr:hover{
-background:#eef6ff;
-}
-
-.text-right{
-text-align:right !important;
-}
-
-/* FILTER BELOW HEADER TEXT */
-.header-title{
-display:block;
-}
-
-.filter-container{
-margin-top:4px;
-}
-
-.filter-icon{
-cursor:pointer;
-color:#ffc107;
-font-size:12px;
+overflow-x:auto;
 }
 
 .top-controls{
 margin-bottom:15px;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
 }
 
 button{
@@ -103,13 +44,83 @@ border-radius:6px;
 cursor:pointer;
 }
 
+input{
+padding:6px;
+border:1px solid #ccc;
+border-radius:6px;
+}
+
+/* KPI */
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:12px;
+margin-bottom:20px;
+}
+
+.card{
+padding:14px;
+border-radius:10px;
+color:#fff;
+text-align:center;
+font-weight:600;
+box-shadow:0 3px 8px rgba(0,0,0,0.2);
+}
+
+.card h4{margin:0;font-size:13px;}
+.card h2{margin:6px 0 0;font-size:18px;}
+
+.color0{background:#2563eb;}
+.color1{background:#16a34a;}
+.color2{background:#f97316;}
+.color3{background:#dc2626;}
+.color4{background:#7c3aed;}
+.color5{background:#111827;}
+
+/* TABLE */
+table{
+border-collapse:collapse;
+width:100%;
+min-width:1200px;
+background:#fff;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:8px;
+text-align:center;
+white-space:nowrap;
+}
+
+th{
+background:#000;
+color:#fff;
+position:relative;
+}
+
+tr:nth-child(even){
+background:#f9f9f9;
+}
+
+.filter-box{
+position:absolute;
+top:100%;
+left:0;
+background:#fff;
+border:1px solid #ccc;
+max-height:200px;
+overflow:auto;
+display:none;
+z-index:999;
+padding:5px;
+}
+
 .footer{
 background:#000;
 color:#fff;
 text-align:center;
 padding:10px;
 margin-top:20px;
-font-size:13px;
 }
 </style>
 </head>
@@ -123,10 +134,14 @@ Gee Impex Live Production Dashboard
 <div class="container">
 
 <div class="top-controls">
+<input type="text" id="searchInput" placeholder="Search...">
 <button onclick="resetFilters()">Reset Filters</button>
+<button onclick="exportTable()">Export Excel</button>
 </div>
 
-<table id="dataTable" class="display"></table>
+<div class="cards" id="cardsContainer"></div>
+
+<table id="dataTable"></table>
 
 </div>
 
@@ -138,86 +153,150 @@ Created by: Vijay Pandey
 
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let table;
+let originalData=[];
+let filteredData=[];
+let headers=[];
+let filters={};
 
+/* LOAD DATA */
 function loadData(){
-
 Papa.parse(sheetURL,{
 download:true,
 header:true,
 skipEmptyLines:true,
 complete:function(results){
 
-let data=results.data.filter(r=>Object.values(r).some(v=>v));
-if(data.length===0) return;
+originalData=results.data.filter(r=>Object.values(r).some(v=>v));
+filteredData=[...originalData];
+headers=Object.keys(originalData[0]);
 
-let headers=Object.keys(data[0]);
-
-if(table){
-table.destroy();
-$('#dataTable').empty();
-}
-
-table=$('#dataTable').DataTable({
-data:data,
-scrollX:true,
-autoWidth:false,
-ordering:false,
-columns:headers.map(h=>({
-title:`<span class="header-title">${h}</span>
-        <div class="filter-container">
-        <span class="filter-icon">🔽</span>
-        </div>`,
-data:h
-}))
-});
-
-addFilters();
-
+createKPI();
+renderTable();
 }
 });
-
 }
 
 loadData();
 setInterval(loadData,60000);
 
-/* FILTER FUNCTION */
-function addFilters(){
+/* KPI */
+function createKPI(){
+let container=document.getElementById("cardsContainer");
+container.innerHTML="";
 
-$('#dataTable thead th').each(function(index){
-
-let column=table.column(index);
-let header=$(this);
-
-header.find('.filter-icon').off('click').on('click',function(e){
-
-e.stopPropagation();
-$('select.column-filter').remove();
-
-let select=$('<select multiple class="column-filter" style="width:100%;margin-top:5px;"></select>')
-.appendTo(header.find('.filter-container'))
-.on('change',function(){
-
-let vals=$(this).val();
-let search=vals ? vals.join('|') : '';
-column.search(search,true,false).draw();
+let numericColumns=headers.filter(h=>{
+let name=h.toLowerCase();
+if(name==="rate"||name==="qty received date") return false;
+return originalData.some(r=>!isNaN(parseFloat(r[h])));
 });
 
-column.data().unique().sort().each(function(d){
-select.append('<option value="'+d+'">'+d+'</option>');
+numericColumns.forEach((col,i)=>{
+let total=0;
+filteredData.forEach(r=>{
+let num=parseFloat(r[col]);
+if(!isNaN(num)) total+=num;
+});
+let div=document.createElement("div");
+div.className="card color"+(i%6);
+div.innerHTML=`<h4>${col}</h4><h2>${total}</h2>`;
+container.appendChild(div);
+});
+}
+
+/* TABLE */
+function renderTable(){
+
+let table=document.getElementById("dataTable");
+table.innerHTML="";
+
+let thead="<tr>";
+headers.forEach(h=>{
+thead+=`<th onclick="toggleFilter('${h}')">${h}
+<div class="filter-box" id="filter-${h}"></div>
+</th>`;
+});
+thead+="</tr>";
+table.innerHTML=thead;
+
+filteredData.forEach(row=>{
+let tr="<tr>";
+headers.forEach(h=>{
+tr+=`<td>${row[h]}</td>`;
+});
+tr+="</tr>";
+table.innerHTML+=tr;
 });
 
+createFilters();
+createKPI();
+}
+
+/* FILTERS */
+function createFilters(){
+headers.forEach(h=>{
+let box=document.getElementById("filter-"+h);
+box.innerHTML="";
+let values=[...new Set(originalData.map(r=>r[h]))];
+
+values.forEach(v=>{
+let label=document.createElement("div");
+label.innerHTML=`<input type="checkbox" value="${v}" onchange="applyFilter()"> ${v}`;
+box.appendChild(label);
+});
+});
+}
+
+function toggleFilter(col){
+document.querySelectorAll(".filter-box").forEach(b=>b.style.display="none");
+let box=document.getElementById("filter-"+col);
+box.style.display="block";
+}
+
+function applyFilter(){
+
+filters={};
+
+headers.forEach(h=>{
+let checked=[...document.querySelectorAll(`#filter-${h} input:checked`)].map(c=>c.value);
+if(checked.length>0) filters[h]=checked;
 });
 
+filteredData=originalData.filter(row=>{
+return Object.keys(filters).every(col=>{
+return filters[col].includes(row[col]);
+});
 });
 
+renderTable();
 }
 
 /* RESET */
 function resetFilters(){
-table.search('').columns().search('').draw();
-$('select.column-filter').remove();
+filters={};
+filteredData=[...originalData];
+renderTable();
+}
+
+/* SEARCH */
+document.getElementById("searchInput").addEventListener("input",function(){
+let val=this.value.toLowerCase();
+filteredData=originalData.filter(row=>{
+return headers.some(h=>String(row[h]).toLowerCase().includes(val));
+});
+renderTable();
+});
+
+/* EXPORT */
+function exportTable(){
+let csv=headers.join(",")+"\n";
+filteredData.forEach(r=>{
+csv+=headers.map(h=>r[h]).join(",")+"\n";
+});
+let blob=new Blob([csv],{type:"text/csv"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="Gee_Impex_Report.csv";
+a.click();
 }
 
 </script>
