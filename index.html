@@ -12,133 +12,53 @@ background:linear-gradient(135deg,#0f172a,#1e293b);
 color:white;
 }
 
-/* LOGIN SCREEN */
+/* LOGIN */
 #loginBox{
-position:fixed;
-top:0;left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.85);
-display:flex;
-align-items:center;
-justify-content:center;
+position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,0.9);
+display:flex;align-items:center;justify-content:center;
 z-index:9999;
 }
-
 .login-card{
-background:#111827;
-padding:30px;
-border-radius:10px;
-box-shadow:0 0 20px rgba(0,0,0,0.6);
-width:300px;
-text-align:center;
+background:#111827;padding:30px;border-radius:10px;width:300px;
+box-shadow:0 0 20px black;text-align:center;
 }
+.login-card input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;}
+.login-card button{width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
+.login-card h2{color:#38bdf8;}
 
-.login-card h2{
-margin-bottom:15px;
-color:#38bdf8;
-}
-
-.login-card input{
-width:100%;
-padding:10px;
-margin:8px 0;
-border:none;
-border-radius:5px;
-}
-
-.login-card button{
-width:100%;
-padding:10px;
-background:#38bdf8;
-border:none;
-border-radius:5px;
-cursor:pointer;
-font-weight:bold;
-}
-
-/* DASHBOARD STYLE */
-.dashboard{
-padding:15px;
-display:none;
-}
-
+/* DASHBOARD */
+.dashboard{padding:15px;display:none;}
 h1{text-align:center;color:#38bdf8;}
 
-.controls{
-margin-bottom:15px;
-}
-
+.controls{margin-bottom:15px;}
 button{
-padding:6px 12px;
-margin-right:8px;
-cursor:pointer;
-border:none;
-border-radius:4px;
-background:#2563eb;
-color:white;
+padding:6px 12px;margin-right:8px;cursor:pointer;border:none;border-radius:4px;
+background:#2563eb;color:white;
 }
-
 input[type="text"]{
-padding:6px;
-width:200px;
-margin-right:10px;
-border-radius:4px;
-border:none;
+padding:6px;width:200px;border-radius:4px;border:none;
 }
 
-table{
-border-collapse:collapse;
-width:100%;
-background:white;
-color:black;
-border-radius:8px;
-overflow:hidden;
-}
+/* TABLE */
+table{border-collapse:collapse;width:100%;background:white;color:black;border-radius:8px;overflow:hidden;}
+th,td{border:1px solid #ccc;padding:6px;text-align:center;}
+th{background:#111827;color:white;}
+tfoot{background:#e5e7eb;font-weight:bold;}
+.locked{background:#d3d3d3 !important;}
 
-th,td{
-border:1px solid #ccc;
-padding:6px;
-text-align:center;
-}
-
-th{
-background:#111827;
-color:white;
-}
-
-tfoot{
-background:#e5e7eb;
-font-weight:bold;
-}
-
-.locked{
-background:#d3d3d3 !important;
-}
-
-.kpi-container{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-margin-bottom:15px;
-}
-
+/* KPI */
+.kpi-container{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;}
 .kpi{
-background:#16a34a;
-color:white;
-padding:10px;
-border-radius:6px;
-min-width:120px;
-text-align:center;
-font-weight:bold;
-box-shadow:0 2px 8px rgba(0,0,0,0.4);
+background:#16a34a;color:white;padding:10px;border-radius:6px;min-width:120px;
+text-align:center;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.4);
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 <div id="loginBox">
 <div class="login-card">
 <h2>Gee Impex Login</h2>
@@ -151,7 +71,6 @@ box-shadow:0 2px 8px rgba(0,0,0,0.4);
 
 <!-- DASHBOARD -->
 <div class="dashboard" id="dashboard">
-
 <h1>Gee Impex Production Dashboard</h1>
 
 <div class="controls">
@@ -167,30 +86,29 @@ box-shadow:0 2px 8px rgba(0,0,0,0.4);
 <tbody></tbody>
 <tfoot></tfoot>
 </table>
-
 </div>
 
 <script>
-// ================= LOGIN SYSTEM =================
-
+// ================= LOGIN =================
 const USER_ID="vijay";
 const USER_PASS="0011";
 
 function login(){
-let id=document.getElementById("loginId").value;
-let pass=document.getElementById("loginPass").value;
-
+let id=loginId.value;
+let pass=loginPass.value;
 if(id===USER_ID && pass===USER_PASS){
-document.getElementById("loginBox").style.display="none";
-document.getElementById("dashboard").style.display="block";
+loginBox.style.display="none";
+dashboard.style.display="block";
 loadDashboard();
 }else{
-document.getElementById("loginMsg").innerText="Wrong ID or Password!";
+loginMsg.innerText="Wrong ID or Password!";
 }
 }
 
-// ================= DASHBOARD DATA =================
+// ================= GOOGLE SHEET API =================
+const API_URL="https://script.google.com/macros/s/AKfycbx3zgoMyJs6vXc9PQR0hHW27Hl2mhR_KI50sSBTqhpEucXKC2zU6Tj2ulGMEzNURm2Fxw/exec";
 
+// ================= SHEET DATA =================
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 const LOCK_PASSWORD="123";
@@ -200,11 +118,7 @@ let lockedRows=JSON.parse(localStorage.getItem("lockedRows"))||{};
 let headers=[];
 
 function loadDashboard(){
-
-fetch(sheetURL)
-.then(res=>res.text())
-.then(data=>{
-
+fetch(sheetURL).then(r=>r.text()).then(data=>{
 let rows=data.split("\n").map(r=>r.split(","));
 headers=rows[0];
 let bodyRows=rows.slice(1);
@@ -215,26 +129,15 @@ thead+="<th>Action</th></tr>";
 document.querySelector("thead").innerHTML=thead;
 
 let tbody="";
-
 bodyRows.forEach((row,index)=>{
-
 if(row.length<headers.length) return;
 let rowId=index;
 
-tbody+=`<tr id="row${rowId}" class="${lockedRows[rowId]?"locked":""}">`;
+tbody+=`<tr id="row${rowId}" class="${lockedRows[rowId]?"locked":""}">
+<td><input type="checkbox" ${lockedRows[rowId]?"checked":""} onchange="handleCheckbox(this,${rowId})"></td>`;
 
-tbody+=`<td>
-<input type="checkbox" 
-${lockedRows[rowId]?"checked":""}
-onchange="handleCheckbox(this,${rowId})">
-</td>`;
-
-row.forEach(cell=>{
-tbody+="<td>"+cell+"</td>";
-});
-
-tbody+=`<td><button onclick="unlockRow(${rowId})">Unlock</button></td>`;
-tbody+="</tr>";
+row.forEach(cell=>tbody+="<td>"+cell+"</td>");
+tbody+=`<td><button onclick="unlockRow(${rowId})">Unlock</button></td></tr>`;
 });
 
 document.querySelector("tbody").innerHTML=tbody;
@@ -242,64 +145,67 @@ updateTotals();
 });
 }
 
-// ================= TOTALS =================
+// ================= UPDATE GOOGLE SHEET =================
+function updateSheet(rowId, action){
+fetch(API_URL,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({row:rowId, action:action})
+})
+.then(r=>r.text()).then(r=>console.log("Sheet Updated:",r));
+}
 
+// ================= TOTALS =================
 function updateTotals(){
 let totals=new Array(headers.length).fill(0);
-let rows=document.querySelectorAll("tbody tr");
-
-rows.forEach(row=>{
+document.querySelectorAll("tbody tr").forEach(row=>{
 if(row.style.display==="none") return;
 let cells=row.querySelectorAll("td");
 for(let i=1;i<=headers.length;i++){
-let val=parseFloat(cells[i].innerText);
-if(!isNaN(val)) totals[i-1]+=val;
+let v=parseFloat(cells[i].innerText);
+if(!isNaN(v)) totals[i-1]+=v;
 }
 });
-
 generateTotals(headers,totals);
 generateKPIs(headers,totals);
 }
 
 function generateTotals(headers,totals){
-let footer="<tr><td>Total</td>";
+let html="<tr><td>Total</td>";
 headers.forEach((h,i)=>{
-if(h.trim()=="Qty Received Date"||h.trim()=="Rate"){
-footer+="<td></td>";
-}else{
-footer+="<td>"+(totals[i]||"")+"</td>";
-}
+if(h=="Qty Received Date"||h=="Rate") html+="<td></td>";
+else html+="<td>"+(totals[i]||"")+"</td>";
 });
-footer+="<td></td></tr>";
-document.querySelector("tfoot").innerHTML=footer;
+html+="<td></td></tr>";
+document.querySelector("tfoot").innerHTML=html;
 }
 
 function generateKPIs(headers,totals){
 let html="";
 headers.forEach((h,i)=>{
-if(h.trim()=="Qty Received Date"||h.trim()=="Rate") return;
-if(!isNaN(totals[i])&&totals[i]!=0){
-html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
-}
+if(h=="Qty Received Date"||h=="Rate") return;
+if(totals[i]) html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
 });
-document.getElementById("kpis").innerHTML=html;
+kpis.innerHTML=html;
 }
 
-// ================= LOCK SYSTEM =================
-
+// ================= LOCK =================
 function handleCheckbox(cb,rowId){
 if(lockedRows[rowId]){
-alert("Row Already Locked");
+alert("Already Locked");
 cb.checked=true;
 return;
 }
-
 if(cb.checked){
-let pass=prompt("Enter Lock Password (123)");
+let pass=prompt("Lock Password (123)");
 if(pass===LOCK_PASSWORD){
 lockedRows[rowId]=true;
 localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
 document.getElementById("row"+rowId).classList.add("locked");
+
+// 🔥 GOOGLE SHEET
+updateSheet(rowId,"lock");
+
 }else{
 alert("Wrong Password");
 cb.checked=false;
@@ -307,38 +213,34 @@ cb.checked=false;
 }
 }
 
+// ================= UNLOCK =================
 function unlockRow(rowId){
-if(!lockedRows[rowId]){
-alert("Row Not Locked");
-return;
-}
-let pass=prompt("Enter Unlock Password (321)");
+if(!lockedRows[rowId]){alert("Not Locked");return;}
+let pass=prompt("Unlock Password (321)");
 if(pass===UNLOCK_PASSWORD){
 delete lockedRows[rowId];
 localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
+
+// 🔥 GOOGLE SHEET
+updateSheet(rowId,"unlock");
+
 location.reload();
-}else{
-alert("Wrong Password");
 }
 }
 
 // ================= SEARCH =================
-
 function searchTable(){
-let input=document.getElementById("searchInput").value.toLowerCase();
-let rows=document.querySelectorAll("tbody tr");
-rows.forEach(row=>{
-let text=row.innerText.toLowerCase();
-row.style.display=text.includes(input)?"":"none";
+let v=searchInput.value.toLowerCase();
+document.querySelectorAll("tbody tr").forEach(r=>{
+r.style.display=r.innerText.toLowerCase().includes(v)?"":"none";
 });
 updateTotals();
 }
 
 // ================= PRINT =================
-
 function printSelected(){
-let selected=document.querySelectorAll("tbody input[type='checkbox']:checked");
-if(selected.length==0){alert("Select rows");return;}
+let selected=document.querySelectorAll("tbody input:checked");
+if(!selected.length){alert("Select Rows");return;}
 
 let totals=new Array(headers.length).fill(0);
 let html="<table border='1' style='width:100%;border-collapse:collapse'><tr>";
@@ -350,34 +252,32 @@ let row=cb.closest("tr");
 html+=row.outerHTML;
 let cells=row.querySelectorAll("td");
 for(let i=1;i<=headers.length;i++){
-let val=parseFloat(cells[i].innerText);
-if(!isNaN(val)) totals[i-1]+=val;
+let v=parseFloat(cells[i].innerText);
+if(!isNaN(v)) totals[i-1]+=v;
 }
 });
 
 html+="<tr style='font-weight:bold;background:#eee'><td>Total</td>";
 headers.forEach((h,i)=>{
-if(h.trim()=="Qty Received Date"||h.trim()=="Rate") html+="<td></td>";
+if(h=="Qty Received Date"||h=="Rate") html+="<td></td>";
 else html+="<td>"+(totals[i]||"")+"</td>";
 });
 html+="<td></td></tr></table>";
 
-let win=window.open("");
-win.document.write("<h2>Gee Impex Production Report</h2>"+html);
-win.print();
+let w=window.open("");
+w.document.write("<h2>Gee Impex Salary Report</h2>"+html);
+w.print();
 }
 
 // ================= EXPORT =================
-
 function exportExcel(){
 let table=document.getElementById("dataTable").outerHTML;
 let blob=new Blob([table],{type:"application/vnd.ms-excel"});
-let link=document.createElement("a");
-link.href=URL.createObjectURL(blob);
-link.download="Gee_Impex_Production_Data.xls";
-link.click();
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="Gee_Impex_Data.xls";
+a.click();
 }
-
 </script>
 
 </body>
