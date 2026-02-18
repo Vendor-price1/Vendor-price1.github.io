@@ -5,6 +5,7 @@
 <title>Gee Impex Production Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#f4f6f9;}
@@ -35,6 +36,7 @@ Gee Impex Production Dashboard
 
 <div class="controls">
 <input type="text" id="searchInput" placeholder="Search...">
+<button onclick="exportExcel()">Export Excel</button>
 <button onclick="printSelected()">Print</button>
 </div>
 
@@ -64,7 +66,7 @@ filteredData=[...originalData];
 headers=Object.keys(originalData[0]);
 
 numericColumns=headers.filter(h=>{
-if(h.trim().toLowerCase()=="rate") return false;
+if(h.trim()=="34Qty Received Date") return false;
 return originalData.some(r=>!isNaN(parseFloat(r[h])));
 });
 
@@ -84,9 +86,9 @@ table.innerHTML=thead;
 
 filteredData.forEach((row,index)=>{
 
-let disabled=lockedRows.has(index)?"disabled":"";
+let checked=lockedRows.has(index)?"checked":"";
 let tr="<tr>";
-tr+=`<td><input type="checkbox" ${disabled} onchange="toggleSelect(${index})"></td>`;
+tr+=`<td><input type="checkbox" ${checked} onchange="toggleLock(${index})"></td>`;
 
 headers.forEach(h=>tr+=`<td>${row[h] ?? ""}</td>`);
 
@@ -99,17 +101,21 @@ table.innerHTML+=tr;
 renderTotals();
 }
 
-function toggleSelect(index){
-
-if(lockedRows.has(index)) return;
+function toggleLock(index){
 
 let pass=prompt("Enter Password:");
 if(pass!=="123"){
 alert("Wrong Password!");
+renderTable();
 return;
 }
 
+if(lockedRows.has(index)){
+lockedRows.delete(index);
+}else{
 lockedRows.add(index);
+}
+
 localStorage.setItem("lockedRows",JSON.stringify([...lockedRows]));
 renderTable();
 }
@@ -165,6 +171,28 @@ return headers.some(h=>String(row[h]??"").toLowerCase().includes(val));
 });
 renderTable();
 });
+
+function exportExcel(){
+
+let exportData=[];
+
+filteredData.forEach((row,index)=>{
+if(lockedRows.has(index)){
+let newRow={...row,Remark:"Salary Done"};
+exportData.push(newRow);
+}
+});
+
+if(exportData.length===0){
+alert("No Salary Done rows selected");
+return;
+}
+
+let ws=XLSX.utils.json_to_sheet(exportData);
+let wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"Salary Report");
+XLSX.writeFile(wb,"Gee_Impex_Production_Report.xlsx");
+}
 
 function printSelected(){
 
