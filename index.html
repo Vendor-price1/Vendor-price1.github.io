@@ -96,18 +96,18 @@ th{
 background:#000;
 color:#fff;
 position:relative;
+font-size:13px;
 }
 
-tr:nth-child(even){
-background:#f9f9f9;
+th span{
+display:block;
 }
 
-/* SMALL FILTER ICON */
 .filter-icon{
-margin-left:6px;
 cursor:pointer;
 color:#ffc107;
 font-size:12px;
+margin-top:4px;
 }
 
 .filter-box{
@@ -123,6 +123,11 @@ z-index:999;
 padding:5px;
 min-width:150px;
 text-align:left;
+color:#000;
+}
+
+tr:nth-child(even){
+background:#f9f9f9;
 }
 
 .footer{
@@ -162,7 +167,7 @@ Created by: Vijay Pandey
 
 <script>
 
-const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
+const sheetURL="YOUR_GOOGLE_SHEET_CSV_LINK_HERE";
 
 let originalData=[];
 let filteredData=[];
@@ -196,7 +201,8 @@ table.innerHTML="";
 
 let thead="<tr>";
 headers.forEach(h=>{
-thead+=`<th>${h}
+thead+=`<th>
+<span>${h}</span>
 <span class="filter-icon" onclick="toggleFilter('${h}')">🔽</span>
 <div class="filter-box" id="filter-${h}"></div>
 </th>`;
@@ -207,7 +213,7 @@ table.innerHTML=thead;
 filteredData.forEach(row=>{
 let tr="<tr>";
 headers.forEach(h=>{
-tr+=`<td>${row[h]}</td>`;
+tr+=`<td>${row[h] ?? ""}</td>`;
 });
 tr+="</tr>";
 table.innerHTML+=tr;
@@ -222,11 +228,22 @@ function createFilters(){
 headers.forEach(h=>{
 let box=document.getElementById("filter-"+h);
 box.innerHTML="";
-let values=[...new Set(originalData.map(r=>r[h]))];
+
+let values=[...new Set(
+originalData
+.map(r=>r[h])
+.filter(v=>v!==undefined && v!==null && String(v).trim()!=="")
+)];
+
+values.sort();
 
 values.forEach(v=>{
 let div=document.createElement("div");
-div.innerHTML=`<label><input type="checkbox" value="${v}" onchange="applyFilter()"> ${v}</label>`;
+div.innerHTML=`
+<label>
+<input type="checkbox" value="${v}" onchange="applyFilter()">
+${v}
+</label>`;
 box.appendChild(div);
 });
 });
@@ -235,20 +252,25 @@ box.appendChild(div);
 function toggleFilter(col){
 document.querySelectorAll(".filter-box").forEach(b=>b.style.display="none");
 let box=document.getElementById("filter-"+col);
-box.style.display=box.style.display==="block"?"none":"block";
+box.style.display="block";
 }
 
 function applyFilter(){
+
 filters={};
 
 headers.forEach(h=>{
-let checked=[...document.querySelectorAll(`#filter-${h} input:checked`)].map(c=>c.value);
-if(checked.length>0) filters[h]=checked;
+let checked=[...document.querySelectorAll(`#filter-${h} input:checked`)]
+.map(c=>c.value);
+
+if(checked.length>0){
+filters[h]=checked;
+}
 });
 
 filteredData=originalData.filter(row=>{
 return Object.keys(filters).every(col=>{
-return filters[col].includes(row[col]);
+return filters[col].includes(String(row[col]).trim());
 });
 });
 
@@ -266,7 +288,7 @@ renderTable();
 document.getElementById("searchInput").addEventListener("input",function(){
 let val=this.value.toLowerCase();
 filteredData=originalData.filter(row=>{
-return headers.some(h=>String(row[h]).toLowerCase().includes(val));
+return headers.some(h=>String(row[h] ?? "").toLowerCase().includes(val));
 });
 renderTable();
 });
@@ -299,7 +321,7 @@ container.appendChild(div);
 function exportTable(){
 let csv=headers.join(",")+"\n";
 filteredData.forEach(r=>{
-csv+=headers.map(h=>r[h]).join(",")+"\n";
+csv+=headers.map(h=>`"${r[h] ?? ""}"`).join(",")+"\n";
 });
 let blob=new Blob([csv],{type:"text/csv"});
 let a=document.createElement("a");
