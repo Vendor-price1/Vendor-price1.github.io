@@ -1,3 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Gee Impex Dashboard</title>
+<style>
+body{
+font-family:Arial;
+background:#f5f5f5;
+padding:10px;
+}
+
+#loginBox{
+width:300px;
+margin:100px auto;
+background:#fff;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px #ccc;
+}
+
+input,button{
+width:100%;
+padding:8px;
+margin:5px 0;
+}
+
+#dashboard{display:none;}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:#fff;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:6px;
+font-size:13px;
+}
+
+th{
+background:#333;
+color:#fff;
+}
+
+tfoot td{
+font-weight:bold;
+background:#eee;
+}
+
+.kpi{
+display:inline-block;
+padding:10px;
+margin:5px;
+background:#222;
+color:#fff;
+border-radius:6px;
+min-width:120px;
+text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN BOX -->
+<div id="loginBox">
+<h3>Gee Impex Login</h3>
+<input id="loginId" placeholder="User ID">
+<input id="loginPass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<div id="loginMsg" style="color:red;"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+<h2>Gee Impex Production Dashboard</h2>
+
+<input id="searchInput" placeholder="Search..." onkeyup="searchTable()">
+<button onclick="printTable()">Print</button>
+<button onclick="exportExcel()">Export Excel</button>
+
+<div id="kpis"></div>
+
+<table id="dataTable">
+<thead></thead>
+<tbody></tbody>
+<tfoot></tfoot>
+</table>
+</div>
+
 <script>
 // LOGIN
 const USER_ID="vijay";
@@ -63,6 +154,7 @@ let colIndex=0;
 
 headers.forEach((h,i)=>{
 if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
+
 let v=parseFloat(cells[colIndex]?.innerText);
 if(!isNaN(v)) totals[i]+=v;
 colIndex++;
@@ -112,11 +204,29 @@ r.style.display=r.innerText.toLowerCase().includes(v)?"":"none";
 updateTotals();
 }
 
-// PRINT
+// PRINT TABLE (PROPER FORMAT)
 function printTable(){
 let table=document.getElementById("dataTable").outerHTML;
 let w=window.open("");
-w.document.write("<h2>Gee Impex Production Report</h2>"+table);
+w.document.write(`
+<html>
+<head>
+<title>Gee Impex Report</title>
+<style>
+body { font-family: Arial; padding:20px; }
+table { border-collapse: collapse; width:100%; }
+th, td { border:1px solid #000; padding:6px; font-size:12px; }
+th { background:#f2f2f2; }
+tfoot td { font-weight:bold; background:#ddd; }
+</style>
+</head>
+<body>
+<h2>Gee Impex Production Report</h2>
+${table}
+</body>
+</html>
+`);
+w.document.close();
 w.print();
 }
 
@@ -130,3 +240,6 @@ a.download="Gee_Impex_Data.xls";
 a.click();
 }
 </script>
+
+</body>
+</html>
