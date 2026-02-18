@@ -23,29 +23,14 @@ z-index:9999;
 background:#111827;padding:30px;border-radius:10px;width:320px;
 box-shadow:0 0 25px black;text-align:center;
 }
-.login-card input{
-width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;
-}
-.login-card button{
-width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;
-font-weight:bold;cursor:pointer;
-}
+.login-card input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;}
+.login-card button{width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
 .login-card h2{color:#38bdf8;}
 
 /* DASHBOARD */
 .dashboard{padding:15px;display:none;}
 h1{text-align:center;color:#38bdf8;}
 
-.controls{margin-bottom:15px;}
-button{
-padding:6px 12px;margin-right:8px;cursor:pointer;border:none;border-radius:4px;
-background:#2563eb;color:white;
-}
-input[type="text"]{
-padding:6px;width:200px;border-radius:4px;border:none;
-}
-
-/* TABLE */
 table{
 border-collapse:collapse;
 width:100%;
@@ -59,35 +44,8 @@ border:1px solid #ccc;
 padding:6px;
 text-align:center;
 }
-th{
-background:#111827;
-color:white;
-}
-tfoot{
-background:#e5e7eb;
-font-weight:bold;
-}
-.locked{
-background:#c7f9cc !important;
-}
-
-/* KPI */
-.kpi-container{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-margin-bottom:15px;
-}
-.kpi{
-background:#16a34a;
-color:white;
-padding:10px;
-border-radius:6px;
-min-width:120px;
-text-align:center;
-font-weight:bold;
-box-shadow:0 2px 8px rgba(0,0,0,0.4);
-}
+th{background:#111827;color:white;}
+.locked{background:#c7f9cc !important;}
 </style>
 </head>
 
@@ -108,30 +66,20 @@ box-shadow:0 2px 8px rgba(0,0,0,0.4);
 <div class="dashboard" id="dashboard">
 <h1>Gee Impex Production Dashboard</h1>
 
-<div class="controls">
-<input type="text" id="searchInput" placeholder="Search..." onkeyup="searchTable()">
-<button onclick="printSelected()">Print Selected</button>
-<button onclick="exportExcel()">Export Excel</button>
-</div>
-
-<div class="kpi-container" id="kpis"></div>
-
 <table id="dataTable">
 <thead></thead>
 <tbody></tbody>
-<tfoot></tfoot>
 </table>
+
 </div>
 
 <script>
-// ================= LOGIN =================
+// LOGIN
 const USER_ID="vijay";
 const USER_PASS="0011";
 
 function login(){
-let id=loginId.value;
-let pass=loginPass.value;
-if(id===USER_ID && pass===USER_PASS){
+if(loginId.value===USER_ID && loginPass.value===USER_PASS){
 loginBox.style.display="none";
 dashboard.style.display="block";
 loadDashboard();
@@ -140,189 +88,63 @@ loginMsg.innerText="Wrong ID or Password!";
 }
 }
 
-// ================= GOOGLE SHEET API =================
+// GOOGLE SCRIPT API
 const API_URL="https://script.google.com/macros/s/AKfycbx3zgoMyJs6vXc9PQR0hHW27Hl2mhR_KI50sSBTqhpEucXKC2zU6Tj2ulGMEzNURm2Fxw/exec";
 
-// ================= GOOGLE SHEET CSV =================
+// GOOGLE SHEET CSV
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-const LOCK_PASSWORD="123";
-const UNLOCK_PASSWORD="321";
-
-let lockedRows=JSON.parse(localStorage.getItem("lockedRows"))||{};
 let headers=[];
 
-// ================= LOAD DASHBOARD =================
+// LOAD DATA
 function loadDashboard(){
 fetch(sheetURL).then(r=>r.text()).then(data=>{
 let rows=data.split("\n").map(r=>r.split(","));
 headers=rows[0];
 let bodyRows=rows.slice(1);
 
+// HEADER
 let thead="<tr><th>Select</th>";
-headers.forEach(h=>thead+="<th>"+h+"</th>");
-thead+="<th>Action</th></tr>";
+headers.forEach(h=>{
+if(h=="Rate"||h=="Amount"||h=="Status") return; // REMOVE
+thead+="<th>"+h+"</th>";
+});
+thead+="</tr>";
 document.querySelector("thead").innerHTML=thead;
 
+// BODY
 let tbody="";
 bodyRows.forEach((row,index)=>{
 if(row.length<headers.length) return;
-let rowId=index;
-
-tbody+=`<tr id="row${rowId}" class="${lockedRows[rowId]?"locked":""}">
-<td><input type="checkbox" ${lockedRows[rowId]?"checked":""} onchange="handleCheckbox(this,${rowId})"></td>`;
+tbody+=`<tr id="row${index}">
+<td><input type="checkbox" onchange="updateStatus(this,${index})"></td>`;
 
 row.forEach((cell,i)=>{
-tbody+=`<td class="cell${i}">${cell}</td>`;
+let h=headers[i];
+if(h=="Rate"||h=="Amount"||h=="Status") return;
+tbody+=`<td>${cell}</td>`;
 });
-
-tbody+=`<td><button onclick="unlockRow(${rowId})">Unlock</button></td></tr>`;
+tbody+="</tr>";
 });
 
 document.querySelector("tbody").innerHTML=tbody;
-updateTotals();
 });
 }
 
-// ================= UPDATE GOOGLE SHEET =================
-function updateSheet(rowId,status){
+// UPDATE GOOGLE SHEET
+function updateStatus(cb,rowId){
+let status = cb.checked ? "DONE" : "";
+
+let row=document.getElementById("row"+rowId);
+if(cb.checked) row.classList.add("locked");
+else row.classList.remove("locked");
+
 fetch(API_URL,{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({row:rowId,status:status})
-});
-}
-
-// ================= CHECKBOX LOCK SYSTEM =================
-function handleCheckbox(cb,rowId){
-
-let row=document.getElementById("row"+rowId);
-let statusCol=headers.indexOf("Status");
-
-if(cb.checked){
-let pass=prompt("Lock Password (123)");
-if(pass!==LOCK_PASSWORD){cb.checked=false;return;}
-
-lockedRows[rowId]=true;
-localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
-row.classList.add("locked");
-
-// DASHBOARD STATUS
-if(statusCol!=-1){
-row.querySelector(".cell"+statusCol).innerText="DONE";
-}
-
-// GOOGLE SHEET STATUS
-updateSheet(rowId,"DONE");
-
-}else{
-// UNCHECK = REMOVE
-delete lockedRows[rowId];
-localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
-row.classList.remove("locked");
-
-if(statusCol!=-1){
-row.querySelector(".cell"+statusCol).innerText="";
-}
-
-updateSheet(rowId,"");
-}
-}
-
-// ================= UNLOCK BUTTON =================
-function unlockRow(rowId){
-let pass=prompt("Unlock Password (321)");
-if(pass!==UNLOCK_PASSWORD) return;
-
-delete lockedRows[rowId];
-localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
-updateSheet(rowId,"");
-location.reload();
-}
-
-// ================= TOTALS =================
-function updateTotals(){
-let totals=new Array(headers.length).fill(0);
-document.querySelectorAll("tbody tr").forEach(row=>{
-if(row.style.display==="none") return;
-let cells=row.querySelectorAll("td");
-for(let i=1;i<=headers.length;i++){
-let v=parseFloat(cells[i].innerText);
-if(!isNaN(v)) totals[i-1]+=v;
-}
-});
-generateTotals(headers,totals);
-generateKPIs(headers,totals);
-}
-
-function generateTotals(headers,totals){
-let html="<tr><td>Total</td>";
-headers.forEach((h,i)=>{
-if(h=="Qty Received Date"||h=="Rate") html+="<td></td>";
-else html+="<td>"+(totals[i]||"")+"</td>";
-});
-html+="<td></td></tr>";
-document.querySelector("tfoot").innerHTML=html;
-}
-
-function generateKPIs(headers,totals){
-let html="";
-headers.forEach((h,i)=>{
-if(h=="Qty Received Date"||h=="Rate") return;
-if(totals[i]) html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
-});
-kpis.innerHTML=html;
-}
-
-// ================= SEARCH =================
-function searchTable(){
-let v=searchInput.value.toLowerCase();
-document.querySelectorAll("tbody tr").forEach(r=>{
-r.style.display=r.innerText.toLowerCase().includes(v)?"":"none";
-});
-updateTotals();
-}
-
-// ================= PRINT SELECTED =================
-function printSelected(){
-let selected=document.querySelectorAll("tbody input:checked");
-if(!selected.length){alert("Select Rows");return;}
-
-let totals=new Array(headers.length).fill(0);
-let html="<table border='1' style='width:100%;border-collapse:collapse'><tr>";
-document.querySelectorAll("thead th").forEach(th=>html+="<th>"+th.innerText+"</th>");
-html+="</tr>";
-
-selected.forEach(cb=>{
-let row=cb.closest("tr");
-html+=row.outerHTML;
-let cells=row.querySelectorAll("td");
-for(let i=1;i<=headers.length;i++){
-let v=parseFloat(cells[i].innerText);
-if(!isNaN(v)) totals[i-1]+=v;
-}
-});
-
-html+="<tr style='font-weight:bold;background:#eee'><td>Total</td>";
-headers.forEach((h,i)=>{
-if(h=="Qty Received Date"||h=="Rate") html+="<td></td>";
-else html+="<td>"+(totals[i]||"")+"</td>";
-});
-html+="<td></td></tr></table>";
-
-let w=window.open("");
-w.document.write("<h2>Gee Impex Salary Report</h2>"+html);
-w.print();
-}
-
-// ================= EXPORT EXCEL =================
-function exportExcel(){
-let table=document.getElementById("dataTable").outerHTML;
-let blob=new Blob([table],{type:"application/vnd.ms-excel"});
-let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="Gee_Impex_Data.xls";
-a.click();
+})
+.then(r=>r.text()).then(console.log);
 }
 </script>
 
