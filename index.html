@@ -8,17 +8,17 @@
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
-<!-- DataTables Core -->
+<!-- DataTables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
-<!-- DataTables Buttons -->
+<!-- Buttons -->
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-<!-- PapaParse -->
+<!-- CSV -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
@@ -35,27 +35,52 @@ padding:15px;
 text-align:center;
 font-size:22px;
 font-weight:600;
-position:relative;
 }
 
 .container{
 padding:15px;
 }
 
-.top-controls{
-margin-bottom:15px;
-display:flex;
-gap:10px;
-flex-wrap:wrap;
+/* ✅ Proper Table Format */
+table.dataTable {
+width:100% !important;
+border-collapse:collapse !important;
 }
 
-button{
-padding:6px 12px;
-background:#111827;
+table.dataTable thead th{
+background:#000;
 color:#fff;
-border:none;
-border-radius:6px;
+text-align:center;
+padding:8px;
+border:1px solid #ddd;
+white-space:nowrap;
+}
+
+table.dataTable tbody td{
+padding:8px;
+border:1px solid #ddd;
+text-align:center;
+vertical-align:middle;
+white-space:nowrap;
+}
+
+table.dataTable tbody tr:nth-child(even){
+background:#f2f2f2;
+}
+
+table.dataTable tbody tr:hover{
+background:#e6f2ff;
+}
+
+.text-right{
+text-align:right !important;
+}
+
+.filter-icon{
 cursor:pointer;
+margin-left:5px;
+color:#ffc107;
+font-size:12px;
 }
 
 .cards{
@@ -84,28 +109,6 @@ box-shadow:0 3px 8px rgba(0,0,0,0.2);
 .color4{background:#7c3aed;}
 .color5{background:#111827;}
 
-table.dataTable thead th{
-background:#000;
-color:#fff;
-white-space:nowrap;
-position:relative;
-}
-
-table.dataTable td{
-white-space:nowrap;
-}
-
-.text-right{
-text-align:right;
-}
-
-.filter-icon{
-cursor:pointer;
-margin-left:5px;
-color:#ffc107;
-font-size:12px;
-}
-
 .footer{
 background:#000;
 color:#fff;
@@ -113,12 +116,6 @@ text-align:center;
 padding:10px;
 margin-top:20px;
 font-size:13px;
-}
-
-@media print{
-.top-controls,.dt-buttons,.dataTables_filter,.dataTables_length,.dataTables_paginate{
-display:none;
-}
 }
 </style>
 </head>
@@ -131,13 +128,9 @@ Gee Impex Live Production Dashboard
 
 <div class="container">
 
-<div class="top-controls">
-<button onclick="resetFilters()">Reset Filters</button>
-</div>
-
 <div class="cards" id="cardsContainer"></div>
 
-<table id="dataTable" class="display nowrap" style="width:100%"></table>
+<table id="dataTable" class="display nowrap"></table>
 
 </div>
 
@@ -152,7 +145,6 @@ const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa
 let table;
 let numericColumns=[];
 
-/* LOAD DATA */
 function loadData(){
 
 Papa.parse(sheetURL,{
@@ -162,15 +154,15 @@ skipEmptyLines:true,
 complete:function(results){
 
 let data=results.data.filter(r=>Object.values(r).some(v=>v));
-if(data.length===0){
-alert("No Data Found");
-return;
-}
+if(data.length===0) return;
 
 let headers=Object.keys(data[0]);
 
+/* ✅ Remove Rate & Qty Received Date from KPI */
 numericColumns=headers.filter(h=>{
-if(h.toLowerCase()=="rate") return false;
+let name=h.toLowerCase().trim();
+if(name==="rate") return false;
+if(name==="qty received date") return false;
 return data.some(r=>!isNaN(parseFloat(r[h])));
 });
 
@@ -240,7 +232,7 @@ if(el) el.innerText=total;
 });
 }
 
-/* FILTER */
+/* Filter */
 function addFilters(){
 table.columns().every(function(){
 let column=this;
@@ -267,12 +259,6 @@ select.append('<option value="'+d+'">'+d+'</option>');
 });
 });
 });
-}
-
-/* RESET */
-function resetFilters(){
-table.search('').columns().search('').draw();
-$('select.column-filter').remove();
 }
 
 </script>
