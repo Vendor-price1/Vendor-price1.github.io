@@ -4,86 +4,79 @@
 <meta charset="UTF-8">
 <title>Gee Impex Production Dashboard</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 <style>
-body{
-    font-family: Arial;
-    background:#f4f6f9;
-    margin:20px;
-}
+body{font-family:Arial;margin:20px;}
+h1{text-align:center;}
 
-h2{
-    text-align:center;
-}
-
-.controls{
-    margin-bottom:15px;
-    text-align:center;
-}
+.controls{margin-bottom:15px;}
 
 button{
-    padding:8px 15px;
-    margin:5px;
-    background:#2f60d3;
-    color:white;
-    border:none;
-    cursor:pointer;
-    border-radius:4px;
+padding:6px 12px;
+margin-right:8px;
+cursor:pointer;
 }
 
-.kpi-container{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-bottom:20px;
-}
-
-.kpi{
-    flex:1 1 150px;
-    background:#2f60d3;
-    color:white;
-    padding:10px;
-    border-radius:8px;
-    text-align:center;
+input[type="text"]{
+padding:6px;
+width:200px;
+margin-right:10px;
 }
 
 table{
-    width:100%;
-    border-collapse:collapse;
-    background:white;
+border-collapse:collapse;
+width:100%;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:6px;
+text-align:center;
 }
 
 th{
-    background:black;
-    color:white;
-    padding:8px;
-    font-size:13px;
+background:black;
+color:white;
 }
 
-td{
-    padding:6px;
-    text-align:center;
-    border:1px solid #ccc;
+tfoot{
+background:#eee;
+font-weight:bold;
 }
 
-tfoot td{
-    font-weight:bold;
-    background:#eee;
+.locked{
+background:#d3d3d3 !important;
+}
+
+.kpi-container{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:15px;
+}
+
+.kpi{
+background:#2f62d6;
+color:white;
+padding:10px;
+border-radius:6px;
+min-width:120px;
+text-align:center;
+font-weight:bold;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Gee Impex Production Dashboard</h2>
+<h1>Gee Impex Production Dashboard</h1>
 
 <div class="controls">
-    <button onclick="printReport()">Print</button>
-    <button onclick="exportExcel()">Export Excel</button>
+<input type="text" id="searchInput" placeholder="Search..." onkeyup="searchTable()">
+<button onclick="printSelected()">Print Selected</button>
+<button onclick="exportExcel()">Export Excel</button>
 </div>
 
-<div class="kpi-container" id="kpiContainer"></div>
+<div class="kpi-container" id="kpis"></div>
 
 <table id="dataTable">
 <thead></thead>
@@ -93,140 +86,175 @@ tfoot td{
 
 <script>
 
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
+const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let fullData=[];
-let headers=[];
-let lockedRows = JSON.parse(localStorage.getItem("lockedRows") || "{}");
+const LOCK_PASSWORD="123";
+const UNLOCK_PASSWORD="321";
+
+let lockedRows=JSON.parse(localStorage.getItem("lockedRows"))||{};
 
 fetch(sheetURL)
 .then(res=>res.text())
-.then(csv=>{
-    const rows = csv.split("\n").map(r=>r.split(","));
-    headers = rows[0];
-    fullData = rows.slice(1);
-    renderTable(fullData);
-    renderKPI(fullData);
-});
+.then(data=>{
 
-function renderTable(data){
+let rows=data.split("\n").map(r=>r.split(","));
+let headers=rows[0];
+let bodyRows=rows.slice(1);
 
 let thead="<tr><th>Select</th>";
 headers.forEach(h=>thead+="<th>"+h+"</th>");
-thead+="</tr>";
-document.querySelector("#dataTable thead").innerHTML=thead;
+thead+="<th>Action</th></tr>";
+document.querySelector("thead").innerHTML=thead;
 
 let tbody="";
-data.forEach((row,i)=>{
+let totals=new Array(headers.length).fill(0);
 
-let locked = lockedRows[i] ? "disabled" : "";
+bodyRows.forEach((row,index)=>{
 
-tbody+="<tr>";
-tbody+=`<td><input type="checkbox" ${locked} onchange="lockRow(${i},this)"></td>`;
-row.forEach(cell=> tbody+="<td>"+cell+"</td>");
+if(row.length<headers.length) return;
+
+let rowId=index;
+
+tbody+=`<tr id="row${rowId}" class="${lockedRows[rowId]?"locked":""}">`;
+
+tbody+=`<td>
+<input type="checkbox" 
+${lockedRows[rowId]?"checked":""}
+onchange="handleCheckbox(this,${rowId})">
+</td>`;
+
+row.forEach((cell,i)=>{
+
+let num=parseFloat(cell);
+if(!isNaN(num)) totals[i]+=num;
+
+tbody+="<td>"+cell+"</td>";
+});
+
+tbody+=`<td>
+<button onclick="unlockRow(${rowId})">Unlock</button>
+</td>`;
+
 tbody+="</tr>";
 });
-document.querySelector("#dataTable tbody").innerHTML=tbody;
 
-renderTotal(data);
-}
+document.querySelector("tbody").innerHTML=tbody;
 
-function renderTotal(data){
-
-let numericIndex = headers.map((h,i)=>isNumericColumn(i,data)?i:null).filter(v=>v!==null);
-
-let trow="<tr><td>Total</td>";
-
-headers.forEach((h,i)=>{
-
-// REMOVE total for Qty Received Date & Rate
-if(h.trim()=="Qty Received Date" || h.trim()=="Rate"){
-    trow+="<td></td>";
-}
-else if(numericIndex.includes(i)){
-    let total = data.reduce((sum,row)=> sum + Number(row[i]||0),0);
-    trow+="<td>"+total+"</td>";
-}
-else{
-    trow+="<td></td>";
-}
+generateTotals(headers,totals);
+generateKPIs(headers,totals);
 
 });
 
-trow+="</tr>";
+function generateTotals(headers,totals){
 
-document.querySelector("#dataTable tfoot").innerHTML=trow;
-}
-
-function renderKPI(data){
-
-let container=document.getElementById("kpiContainer");
-container.innerHTML="";
+let footer="<tr><td>Total</td>";
 
 headers.forEach((h,i)=>{
 
-if(isNumericColumn(i,data) && h.trim()!="Qty Received Date" && h.trim()!="Rate"){
-
-let total=data.reduce((sum,row)=>sum+Number(row[i]||0),0);
-
-container.innerHTML+=`
-<div class="kpi">
-<div>${h}</div>
-<div>${total}</div>
-</div>
-`;
-
-}
-
-});
-}
-
-function isNumericColumn(index,data){
-return data.every(row=>!isNaN(row[index]) && row[index]!="");
-}
-
-function lockRow(index,checkbox){
-
-if(checkbox.checked){
-
-let pass = prompt("Enter Password to Lock Row:");
-if(pass==="123"){
-lockedRows[index]=true;
-localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
-renderTable(fullData);
-}
-else{
-alert("Wrong Password");
-checkbox.checked=false;
-}
-
+if(h.trim()=="Qty Received Date"||h.trim()=="Rate"){
+footer+="<td></td>";
 }else{
+footer+="<td>"+(totals[i]||"")+"</td>";
+}
+});
 
-let pass = prompt("Enter Password to Unlock Row:");
-if(pass==="123"){
-delete lockedRows[index];
+footer+="<td></td></tr>";
+document.querySelector("tfoot").innerHTML=footer;
+}
+
+function generateKPIs(headers,totals){
+
+let html="";
+headers.forEach((h,i)=>{
+if(h.trim()=="Qty Received Date"||h.trim()=="Rate") return;
+if(!isNaN(totals[i])&&totals[i]!=0){
+html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
+}
+});
+document.getElementById("kpis").innerHTML=html;
+}
+
+function handleCheckbox(cb,rowId){
+
+if(lockedRows[rowId]){
+alert("Row Already Locked");
+cb.checked=true;
+return;
+}
+
+if(cb.checked){
+let pass=prompt("Enter Lock Password (123)");
+if(pass===LOCK_PASSWORD){
+lockedRows[rowId]=true;
 localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
-renderTable(fullData);
-}
-else{
+document.getElementById("row"+rowId).classList.add("locked");
+}else{
 alert("Wrong Password");
-checkbox.checked=true;
+cb.checked=false;
+}
+}
 }
 
+function unlockRow(rowId){
+
+if(!lockedRows[rowId]){
+alert("Row Not Locked");
+return;
 }
 
+let pass=prompt("Enter Unlock Password (321)");
+if(pass===UNLOCK_PASSWORD){
+delete lockedRows[rowId];
+localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
+location.reload();
+}else{
+alert("Wrong Password");
+}
 }
 
-function printReport(){
-window.print();
+function printSelected(){
+
+let selected=document.querySelectorAll("tbody input[type='checkbox']:checked");
+
+if(selected.length==0){
+alert("Select at least one row");
+return;
+}
+
+let html="<table border='1' style='border-collapse:collapse;width:100%'><tr>";
+document.querySelectorAll("thead th").forEach(th=>{
+html+="<th>"+th.innerText+"</th>";
+});
+html+="</tr>";
+
+selected.forEach(cb=>{
+html+=cb.closest("tr").outerHTML;
+});
+html+="</table>";
+
+let win=window.open("");
+win.document.write("<h2>Gee Impex Production Report</h2>"+html);
+win.print();
 }
 
 function exportExcel(){
+let table=document.getElementById("dataTable").outerHTML;
+let blob=new Blob([table],{type:"application/vnd.ms-excel"});
+let link=document.createElement("a");
+link.href=URL.createObjectURL(blob);
+link.download="Gee_Impex_Production_Data.xls";
+link.click();
+}
 
-let table = document.getElementById("dataTable");
-let wb = XLSX.utils.table_to_book(table,{sheet:"Sheet1"});
-XLSX.writeFile(wb,"Gee_Impex_Production.xlsx");
+function searchTable(){
 
+let input=document.getElementById("searchInput").value.toLowerCase();
+let rows=document.querySelectorAll("tbody tr");
+
+rows.forEach(row=>{
+let text=row.innerText.toLowerCase();
+row.style.display=text.includes(input)?"":"none";
+});
 }
 
 </script>
