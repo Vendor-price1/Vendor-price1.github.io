@@ -92,13 +92,14 @@ const LOCK_PASSWORD="123";
 const UNLOCK_PASSWORD="321";
 
 let lockedRows=JSON.parse(localStorage.getItem("lockedRows"))||{};
+let headers=[];
 
 fetch(sheetURL)
 .then(res=>res.text())
 .then(data=>{
 
 let rows=data.split("\n").map(r=>r.split(","));
-let headers=rows[0];
+headers=rows[0];
 let bodyRows=rows.slice(1);
 
 let thead="<tr><th>Select</th>";
@@ -107,12 +108,10 @@ thead+="<th>Action</th></tr>";
 document.querySelector("thead").innerHTML=thead;
 
 let tbody="";
-let totals=new Array(headers.length).fill(0);
 
 bodyRows.forEach((row,index)=>{
 
 if(row.length<headers.length) return;
-
 let rowId=index;
 
 tbody+=`<tr id="row${rowId}" class="${lockedRows[rowId]?"locked":""}">`;
@@ -123,34 +122,48 @@ ${lockedRows[rowId]?"checked":""}
 onchange="handleCheckbox(this,${rowId})">
 </td>`;
 
-row.forEach((cell,i)=>{
-
-let num=parseFloat(cell);
-if(!isNaN(num)) totals[i]+=num;
-
+row.forEach(cell=>{
 tbody+="<td>"+cell+"</td>";
 });
 
-tbody+=`<td>
-<button onclick="unlockRow(${rowId})">Unlock</button>
-</td>`;
-
+tbody+=`<td><button onclick="unlockRow(${rowId})">Unlock</button></td>`;
 tbody+="</tr>";
 });
 
 document.querySelector("tbody").innerHTML=tbody;
 
+// Initial totals
+updateTotals();
+});
+
+
+// ================= TOTAL & KPI FUNCTION =================
+
+function updateTotals(){
+
+let totals=new Array(headers.length).fill(0);
+let rows=document.querySelectorAll("tbody tr");
+
+rows.forEach(row=>{
+if(row.style.display==="none") return; // only visible rows
+
+let cells=row.querySelectorAll("td");
+for(let i=1;i<=headers.length;i++){
+let val=parseFloat(cells[i].innerText);
+if(!isNaN(val)) totals[i-1]+=val;
+}
+});
+
 generateTotals(headers,totals);
 generateKPIs(headers,totals);
+}
 
-});
 
 function generateTotals(headers,totals){
 
 let footer="<tr><td>Total</td>";
 
 headers.forEach((h,i)=>{
-
 if(h.trim()=="Qty Received Date"||h.trim()=="Rate"){
 footer+="<td></td>";
 }else{
@@ -161,6 +174,7 @@ footer+="<td>"+(totals[i]||"")+"</td>";
 footer+="<td></td></tr>";
 document.querySelector("tfoot").innerHTML=footer;
 }
+
 
 function generateKPIs(headers,totals){
 
@@ -173,6 +187,9 @@ html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
 });
 document.getElementById("kpis").innerHTML=html;
 }
+
+
+// ================= LOCK SYSTEM =================
 
 function handleCheckbox(cb,rowId){
 
@@ -212,6 +229,9 @@ alert("Wrong Password");
 }
 }
 
+
+// ================= PRINT SELECTED WITH TOTAL =================
+
 function printSelected(){
 
 let selected=document.querySelectorAll("tbody input[type='checkbox']:checked");
@@ -221,6 +241,8 @@ alert("Select at least one row");
 return;
 }
 
+let totals=new Array(headers.length).fill(0);
+
 let html="<table border='1' style='border-collapse:collapse;width:100%'><tr>";
 document.querySelectorAll("thead th").forEach(th=>{
 html+="<th>"+th.innerText+"</th>";
@@ -228,14 +250,36 @@ html+="<th>"+th.innerText+"</th>";
 html+="</tr>";
 
 selected.forEach(cb=>{
-html+=cb.closest("tr").outerHTML;
+let row=cb.closest("tr");
+html+=row.outerHTML;
+
+let cells=row.querySelectorAll("td");
+for(let i=1;i<=headers.length;i++){
+let val=parseFloat(cells[i].innerText);
+if(!isNaN(val)) totals[i-1]+=val;
+}
 });
+
+// TOTAL ROW
+html+="<tr style='font-weight:bold;background:#eee'><td>Total</td>";
+headers.forEach((h,i)=>{
+if(h.trim()=="Qty Received Date"||h.trim()=="Rate"){
+html+="<td></td>";
+}else{
+html+="<td>"+(totals[i]||"")+"</td>";
+}
+});
+html+="<td></td></tr>";
+
 html+="</table>";
 
 let win=window.open("");
 win.document.write("<h2>Gee Impex Production Report</h2>"+html);
 win.print();
 }
+
+
+// ================= EXPORT =================
 
 function exportExcel(){
 let table=document.getElementById("dataTable").outerHTML;
@@ -246,6 +290,9 @@ link.download="Gee_Impex_Production_Data.xls";
 link.click();
 }
 
+
+// ================= SEARCH WITH LIVE TOTAL =================
+
 function searchTable(){
 
 let input=document.getElementById("searchInput").value.toLowerCase();
@@ -255,6 +302,8 @@ rows.forEach(row=>{
 let text=row.innerText.toLowerCase();
 row.style.display=text.includes(input)?"":"none";
 });
+
+updateTotals(); // live update totals
 }
 
 </script>
