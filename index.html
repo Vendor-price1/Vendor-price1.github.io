@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Gee Impex Dashboard</title>
+<title>Gee Impex Production Dashboard</title>
 
 <style>
 body{
@@ -10,7 +10,7 @@ background: linear-gradient(135deg,#0f172a,#1e293b);
 padding:20px;
 }
 
-/* LOGIN */
+/* LOGIN BOX */
 #loginBox{
 width:320px;
 margin:120px auto;
@@ -20,7 +20,7 @@ border-radius:12px;
 box-shadow:0 10px 30px rgba(0,0,0,.4);
 }
 
-/* INPUT */
+/* INPUTS */
 input,button{
 padding:9px;
 margin:5px;
@@ -117,7 +117,7 @@ color:#fff;
 <!-- DASHBOARD -->
 <div id="dashboard">
 
-<h2 style="margin:5px 0">📊 Gee Impex Production Dashboard</h2>
+<h2 style="text-align:center;margin:5px 0;">📊 Gee Impex Production Dashboard</h2>
 
 <input id="searchInput" placeholder="Search..." onkeyup="searchTable()">
 
@@ -139,12 +139,20 @@ color:#fff;
 <footer>Created by: Vijay Pandey</footer>
 
 <script>
-// LOGIN
+// ================= LOGIN SYSTEM =================
 const USER_ID="vijay";
 const USER_PASS="0011";
 
+// AUTO LOGIN IF SESSION EXISTS
+if(sessionStorage.getItem("loggedIn")){
+loginBox.style.display="none";
+dashboard.style.display="block";
+loadDashboard();
+}
+
 function login(){
 if(loginId.value===USER_ID && loginPass.value===USER_PASS){
+sessionStorage.setItem("loggedIn","true"); // save session
 loginBox.style.display="none";
 dashboard.style.display="block";
 loadDashboard();
@@ -153,11 +161,12 @@ loginMsg.innerText="Wrong ID or Password!";
 }
 }
 
-// GOOGLE SHEET
+// ================= GOOGLE SHEET =================
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 let headers=[];
-let allRows=[];
+let allRows=[];        // filtered rows
+let originalRows=[];   // full backup rows
 let currentPage=1;
 let rowsPerPage=25;
 
@@ -166,12 +175,13 @@ function loadDashboard(){
 fetch(sheetURL).then(r=>r.text()).then(data=>{
 let rows=data.split("\n").map(r=>r.split(","));
 headers=rows[0].map(h=>h.trim());
-allRows=rows.slice(1);
+originalRows=rows.slice(1);
+allRows=[...originalRows]; // copy
 buildTable();
 });
 }
 
-// BUILD TABLE
+// BUILD HEADER
 function buildTable(){
 let thead="<tr>";
 headers.forEach(h=>{
@@ -184,7 +194,7 @@ document.querySelector("thead").innerHTML=thead;
 showPage(1);
 }
 
-// SHOW PAGE
+// ================= PAGINATION =================
 function showPage(page){
 currentPage=page;
 let start=(page-1)*rowsPerPage;
@@ -207,7 +217,6 @@ updateTotals();
 createPagination();
 }
 
-// PAGINATION BUTTONS
 function createPagination(){
 let totalPages=Math.ceil(allRows.length/rowsPerPage);
 let html="";
@@ -217,7 +226,7 @@ html+=`<button class="${i==currentPage?'active':''}" onclick="showPage(${i})">${
 document.getElementById("pagination").innerHTML=html;
 }
 
-// TOTALS + KPI
+// ================= TOTALS & KPI =================
 function updateTotals(){
 let totals=new Array(headers.length).fill(0);
 
@@ -258,21 +267,27 @@ if(totals[i]) html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
 kpis.innerHTML=html;
 }
 
-// SEARCH
+// ================= SEARCH FIX =================
 function searchTable(){
 let v=searchInput.value.toLowerCase();
-allRows=allRows.filter(r=>r.join(" ").toLowerCase().includes(v));
+
+if(v===""){
+allRows=[...originalRows]; // RESET FULL DATA
+}else{
+allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
+}
+
 showPage(1);
 }
 
-// PRINT
+// ================= PRINT =================
 function printTable(){
 let w=window.open("");
 w.document.write(document.getElementById("dataTable").outerHTML);
 w.print();
 }
 
-// EXPORT EXCEL
+// ================= EXPORT EXCEL =================
 function exportExcel(){
 let table=document.getElementById("dataTable").outerHTML;
 let blob=new Blob([table],{type:"application/vnd.ms-excel"});
