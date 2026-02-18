@@ -1,70 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Gee Impex ERP Dashboard</title>
+<title>Gee Impex Production Dashboard</title>
 
 <style>
 body{
-margin:0;
 font-family: "Segoe UI", Arial;
-background:#f1f5f9;
+background: linear-gradient(135deg,#0f172a,#1e293b);
+padding:20px;
 }
 
-/* SIDEBAR */
-#sidebar{
-width:220px;
-height:100vh;
-background:#0f172a;
-color:#fff;
-position:fixed;
-padding:15px;
+/* LOGIN BOX */
+#loginBox{
+width:320px;
+margin:120px auto;
+background:#fff;
+padding:25px;
+border-radius:12px;
+box-shadow:0 10px 30px rgba(0,0,0,.4);
 }
 
-#sidebar h3{
-text-align:center;
-margin-bottom:20px;
-}
-
-#sidebar a{
-display:block;
-color:#cbd5f5;
-text-decoration:none;
-padding:10px;
+/* INPUTS */
+input,button{
+padding:9px;
+margin:5px;
 border-radius:6px;
-margin:4px 0;
+border:1px solid #ccc;
+font-size:14px;
 }
-#sidebar a:hover{
+
+/* BUTTONS */
+button{
 background:#2563eb;
 color:#fff;
-}
-
-/* MAIN CONTENT */
-#main{
-margin-left:240px;
-padding:15px;
-}
-
-/* TOP BAR */
-#topbar{
-background:#fff;
-padding:10px 15px;
-border-radius:8px;
-box-shadow:0 2px 10px rgba(0,0,0,.1);
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-/* KPI CARDS */
-.kpi{
-display:inline-block;
-background:#fff;
-padding:15px;
-margin:10px;
-border-radius:10px;
-box-shadow:0 5px 15px rgba(0,0,0,.1);
-min-width:150px;
+border:none;
 font-weight:bold;
+cursor:pointer;
+padding:8px 12px;
+}
+button:hover{background:#1d4ed8}
+
+/* DASHBOARD */
+#dashboard{
+display:none;
+background:#f8fafc;
+padding:15px;
+border-radius:12px;
+box-shadow:0 10px 25px rgba(0,0,0,.25);
 }
 
 /* TABLE */
@@ -72,73 +54,102 @@ table{
 width:100%;
 border-collapse:collapse;
 background:#fff;
-border-radius:10px;
+border-radius:8px;
 overflow:hidden;
-box-shadow:0 5px 15px rgba(0,0,0,.1);
+box-shadow:0 5px 15px rgba(0,0,0,.15);
 }
 
-th,td{
-border:1px solid #e5e7eb;
+/* HEADER */
+th{
+background:#111827;
+color:#fff;
 padding:8px;
+font-size:13px;
+border:1px solid #374151;
+position:sticky;
+top:0;
+}
+
+/* DATA CELLS */
+td{
+border:1px solid #e5e7eb;
+padding:6px;
 font-size:12px;
 }
 
-th{
-background:#2563eb;
+/* STRIPED ROWS */
+tbody tr:nth-child(even){
+background:#f3f4f6;
+}
+tbody tr:hover{
+background:#dbeafe;
+}
+
+/* TOTAL ROW STYLE (LIKE HEADER) */
+tfoot td{
+background:#111827;
 color:#fff;
+font-weight:bold;
+border:1px solid #374151;
+}
+
+/* KPI */
+.kpi{
+display:inline-block;
+padding:10px 15px;
+margin:6px;
+background:linear-gradient(135deg,#2563eb,#9333ea);
+color:#fff;
+border-radius:8px;
+font-weight:bold;
 }
 
 /* PAGINATION */
 #pagination button{
-padding:5px 10px;
 margin:2px;
-background:#e5e7eb;
-border:none;
+padding:5px 10px;
+background:#374151;
+color:#fff;
 border-radius:5px;
+border:none;
 }
 #pagination button.active{
 background:#2563eb;
-color:#fff;
 }
 
 /* FOOTER */
 footer{
 text-align:center;
-font-size:12px;
 margin-top:10px;
-color:#555;
+font-size:12px;
+color:#fff;
 }
 </style>
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
-<div id="sidebar">
-<h3>Gee Impex ERP</h3>
-<a href="#">📊 Dashboard</a>
-<a href="#">📦 Orders</a>
-<a href="#">📑 Reports</a>
-<a href="#">🏭 Inventory</a>
-<a href="#">⚙ Settings</a>
+<!-- LOGIN -->
+<div id="loginBox">
+<h3>Secure Login</h3>
+<input id="loginId" placeholder="User ID"><br>
+<input id="loginPass" type="password" placeholder="Password"><br>
+<button onclick="login()">Login</button>
+<div id="loginMsg" style="color:red"></div>
 </div>
 
-<!-- MAIN AREA -->
-<div id="main">
+<!-- DASHBOARD -->
+<div id="dashboard">
 
-<!-- TOP BAR -->
-<div id="topbar">
-<div><b>Gee Impex Production Dashboard</b></div>
-<div>
+<h2 style="text-align:center;margin:5px 0;">📊 Gee Impex Production Dashboard</h2>
+
 <input id="searchInput" placeholder="Search..." onkeyup="searchTable()">
-<button onclick="logout()">Logout</button>
-</div>
-</div>
 
-<!-- KPI -->
+<button onclick="printTable()">Print</button>
+<button onclick="exportExcel()">Excel</button>
+
 <div id="kpis"></div>
 
-<!-- TABLE -->
 <table id="dataTable">
 <thead></thead>
 <tbody></tbody>
@@ -147,84 +158,177 @@ color:#555;
 
 <div id="pagination"></div>
 
-<footer>Created by: Vijay Pandey</footer>
-
 </div>
 
+<footer>Created by: Vijay Pandey</footer>
+
 <script>
-// ===== SESSION LOGIN =====
-if(!sessionStorage.getItem("loggedIn")){
-alert("Please Login First");
+// ================= LOGIN SYSTEM =================
+const USER_ID="vijay";
+const USER_PASS="0011";
+
+if(sessionStorage.getItem("loggedIn")){
+loginBox.style.display="none";
+dashboard.style.display="block";
+loadDashboard();
 }
 
-// LOGOUT
-function logout(){
-sessionStorage.removeItem("loggedIn");
-location.reload();
+function login(){
+if(loginId.value===USER_ID && loginPass.value===USER_PASS){
+sessionStorage.setItem("loggedIn","true");
+loginBox.style.display="none";
+dashboard.style.display="block";
+loadDashboard();
+}else{
+loginMsg.innerText="Wrong ID or Password!";
+}
 }
 
-// GOOGLE SHEET CSV
+// ================= GOOGLE SHEET =================
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let headers=[], originalRows=[], allRows=[];
-let rowsPerPage=25, currentPage=1;
+let headers=[];
+let allRows=[];
+let originalRows=[];
+let currentPage=1;
+let rowsPerPage=25;
 
 // LOAD DATA
+function loadDashboard(){
 fetch(sheetURL).then(r=>r.text()).then(data=>{
 let rows=data.split("\n").map(r=>r.split(","));
 headers=rows[0].map(h=>h.trim());
 originalRows=rows.slice(1);
 allRows=[...originalRows];
-buildHeader();
-showPage(1);
+buildTable();
 });
-
-// HEADER
-function buildHeader(){
-let h="<tr>";
-headers.forEach(c=>{
-if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(c)) return;
-h+="<th>"+c+"</th>";
-});
-h+="</tr>";
-document.querySelector("thead").innerHTML=h;
 }
 
-// PAGE LOAD
-function showPage(p){
-currentPage=p;
-let start=(p-1)*rowsPerPage;
-let pageRows=allRows.slice(start,start+rowsPerPage);
-
-let b="";
-pageRows.forEach(r=>{
-b+="<tr>";
-r.forEach((c,i)=>{
-if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(headers[i])) return;
-b+="<td>"+c+"</td>";
+// BUILD HEADER
+function buildTable(){
+let thead="<tr>";
+headers.forEach(h=>{
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
+thead+="<th>"+h+"</th>";
 });
-b+="</tr>";
-});
-document.querySelector("tbody").innerHTML=b;
-makePagination();
+thead+="</tr>";
+document.querySelector("thead").innerHTML=thead;
+showPage(1);
 }
 
 // PAGINATION
-function makePagination(){
-let totalPages=Math.ceil(allRows.length/rowsPerPage);
-let h="";
-for(let i=1;i<=totalPages;i++){
-h+=`<button class="${i==currentPage?'active':''}" onclick="showPage(${i})">${i}</button>`;
+function showPage(page){
+currentPage=page;
+let start=(page-1)*rowsPerPage;
+let pageRows=allRows.slice(start,start+rowsPerPage);
+
+let tbody="";
+pageRows.forEach(row=>{
+tbody+="<tr>";
+row.forEach((cell,i)=>{
+let h=headers[i];
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
+tbody+="<td>"+cell+"</td>";
+});
+tbody+="</tr>";
+});
+document.querySelector("tbody").innerHTML=tbody;
+
+updateTotals();
+createPagination();
 }
-pagination.innerHTML=h;
+
+function createPagination(){
+let totalPages=Math.ceil(allRows.length/rowsPerPage);
+let html="";
+for(let i=1;i<=totalPages;i++){
+html+=`<button class="${i==currentPage?'active':''}" onclick="showPage(${i})">${i}</button>`;
+}
+pagination.innerHTML=html;
+}
+
+// TOTALS + KPI
+function updateTotals(){
+let totals=new Array(headers.length).fill(0);
+
+document.querySelectorAll("tbody tr").forEach(row=>{
+let cells=row.querySelectorAll("td");
+let colIndex=0;
+
+headers.forEach((h,i)=>{
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
+let v=parseFloat(cells[colIndex]?.innerText);
+if(!isNaN(v)) totals[i]+=v;
+colIndex++;
+});
+});
+
+generateTotals(totals);
+generateKPIs(totals);
+}
+
+function generateTotals(totals){
+let html="<tr>";
+let colIndex=0;
+
+headers.forEach((h,i)=>{
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
+
+if(colIndex==0){
+html+="<td><b>TOTAL</b></td>";
+}else{
+html+="<td><b>"+(totals[i]||"")+"</b></td>";
+}
+colIndex++;
+});
+html+="</tr>";
+document.querySelector("tfoot").innerHTML=html;
+}
+
+function generateKPIs(totals){
+let html="";
+headers.forEach((h,i)=>{
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
+if(totals[i]) html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
+});
+kpis.innerHTML=html;
 }
 
 // SEARCH FIX
 function searchTable(){
 let v=searchInput.value.toLowerCase();
-if(v==="") allRows=[...originalRows];
-else allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
+if(v===""){
+allRows=[...originalRows];
+}else{
+allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
+}
 showPage(1);
+}
+
+// PRINT
+function printTable(){
+let w=window.open("");
+w.document.write(`
+<style>
+table{border-collapse:collapse;width:100%;}
+th,td{border:1px solid #000;padding:5px;font-size:12px;}
+th{background:#ddd;}
+tfoot td{font-weight:bold;background:#ccc;}
+</style>
+<h2>Gee Impex Production Report</h2>
+${dataTable.outerHTML}
+`);
+w.print();
+}
+
+// EXPORT EXCEL
+function exportExcel(){
+let table=dataTable.outerHTML;
+let blob=new Blob([table],{type:"application/vnd.ms-excel"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="Gee_Impex_Data.xls";
+a.click();
 }
 </script>
 
