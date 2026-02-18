@@ -41,6 +41,24 @@ padding:6px 12px;margin-right:8px;border:none;border-radius:4px;
 background:#2563eb;color:white;cursor:pointer;
 }
 
+/* KPI */
+.kpi-container{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:15px;
+}
+.kpi{
+background:#16a34a;
+color:white;
+padding:10px;
+border-radius:6px;
+min-width:120px;
+text-align:center;
+font-weight:bold;
+box-shadow:0 2px 8px rgba(0,0,0,0.4);
+}
+
 /* TABLE */
 table{
 border-collapse:collapse;
@@ -85,6 +103,8 @@ font-weight:bold;
 <button onclick="printTable()">Print</button>
 <button onclick="exportExcel()">Export Excel</button>
 </div>
+
+<div class="kpi-container" id="kpis"></div>
 
 <table id="dataTable">
 <thead></thead>
@@ -148,7 +168,7 @@ updateTotals();
 });
 }
 
-// TOTAL CALCULATION
+// TOTALS + KPI
 function updateTotals(){
 let totals=new Array(headers.length).fill(0);
 
@@ -166,23 +186,39 @@ colIndex++;
 });
 
 generateTotals(totals);
+generateKPIs(totals);
 }
 
 function generateTotals(totals){
 let html="<tr>";
 let colIndex=0;
+
 headers.forEach((h,i)=>{
 if(h=="Rate"||h=="Amount"||h=="Status") return;
 
 if(colIndex==0){
 html+="<td>Total</td>";
 }else{
-html+="<td>"+(totals[i]||"")+"</td>";
+if(h=="Qty Received") html+="<td></td>"; // ❌ REMOVE QTY TOTAL
+else html+="<td>"+(totals[i]||"")+"</td>";
 }
 colIndex++;
 });
 html+="</tr>";
 document.querySelector("tfoot").innerHTML=html;
+}
+
+function generateKPIs(totals){
+let html="";
+headers.forEach((h,i)=>{
+if(h=="Rate"||h=="Amount"||h=="Status") return;
+if(h=="Qty Received") return; // ❌ REMOVE KPI
+
+if(totals[i]){
+html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
+}
+});
+kpis.innerHTML=html;
 }
 
 // SEARCH
