@@ -1,119 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Gee Impex Production Dashboard</title>
-
-<style>
-body{
-font-family:Arial;
-margin:0;
-background:linear-gradient(135deg,#0f172a,#1e293b);
-color:white;
-}
-
-/* LOGIN */
-#loginBox{
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.9);
-display:flex;align-items:center;justify-content:center;
-z-index:9999;
-}
-.login-card{
-background:#111827;padding:30px;border-radius:10px;width:320px;
-box-shadow:0 0 25px black;text-align:center;
-}
-.login-card input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;}
-.login-card button{width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
-.login-card h2{color:#38bdf8;}
-
-/* DASHBOARD */
-.dashboard{padding:15px;display:none;}
-h1{text-align:center;color:#38bdf8;}
-
-/* CONTROLS */
-.controls{margin-bottom:15px;}
-.controls input{
-padding:6px;width:200px;border-radius:4px;border:none;
-}
-.controls button{
-padding:6px 12px;margin-right:8px;border:none;border-radius:4px;
-background:#2563eb;color:white;cursor:pointer;
-}
-
-/* KPI */
-.kpi-container{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-margin-bottom:15px;
-}
-.kpi{
-background:#16a34a;
-color:white;
-padding:10px;
-border-radius:6px;
-min-width:120px;
-text-align:center;
-font-weight:bold;
-box-shadow:0 2px 8px rgba(0,0,0,0.4);
-}
-
-/* TABLE */
-table{
-border-collapse:collapse;
-width:100%;
-background:white;
-color:black;
-border-radius:8px;
-overflow:hidden;
-}
-th,td{
-border:1px solid #ccc;
-padding:6px;
-text-align:center;
-}
-th{background:#111827;color:white;}
-tfoot{
-background:#e5e7eb;
-font-weight:bold;
-}
-</style>
-</head>
-
-<body>
-
-<!-- LOGIN -->
-<div id="loginBox">
-<div class="login-card">
-<h2>Gee Impex Login</h2>
-<input type="text" id="loginId" placeholder="User ID">
-<input type="password" id="loginPass" placeholder="Password">
-<button onclick="login()">Login</button>
-<p id="loginMsg" style="color:red;"></p>
-</div>
-</div>
-
-<!-- DASHBOARD -->
-<div class="dashboard" id="dashboard">
-<h1>Gee Impex Production Dashboard</h1>
-
-<div class="controls">
-<input type="text" id="searchInput" placeholder="Search..." onkeyup="searchTable()">
-<button onclick="printTable()">Print</button>
-<button onclick="exportExcel()">Export Excel</button>
-</div>
-
-<div class="kpi-container" id="kpis"></div>
-
-<table id="dataTable">
-<thead></thead>
-<tbody></tbody>
-<tfoot></tfoot>
-</table>
-
-</div>
-
 <script>
 // LOGIN
 const USER_ID="vijay";
@@ -138,13 +22,13 @@ let headers=[];
 function loadDashboard(){
 fetch(sheetURL).then(r=>r.text()).then(data=>{
 let rows=data.split("\n").map(r=>r.split(","));
-headers=rows[0];
+headers=rows[0].map(h=>h.trim());
 let bodyRows=rows.slice(1);
 
 // HEADER
 let thead="<tr>";
 headers.forEach(h=>{
-if(h=="Rate"||h=="Amount"||h=="Status") return;
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
 thead+="<th>"+h+"</th>";
 });
 thead+="</tr>";
@@ -157,7 +41,7 @@ if(row.length<headers.length) return;
 tbody+="<tr>";
 row.forEach((cell,i)=>{
 let h=headers[i];
-if(h=="Rate"||h=="Amount"||h=="Status") return;
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
 tbody+="<td>"+cell+"</td>";
 });
 tbody+="</tr>";
@@ -178,7 +62,7 @@ let cells=row.querySelectorAll("td");
 let colIndex=0;
 
 headers.forEach((h,i)=>{
-if(h=="Rate"||h=="Amount"||h=="Status") return;
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
 let v=parseFloat(cells[colIndex]?.innerText);
 if(!isNaN(v)) totals[i]+=v;
 colIndex++;
@@ -194,13 +78,12 @@ let html="<tr>";
 let colIndex=0;
 
 headers.forEach((h,i)=>{
-if(h=="Rate"||h=="Amount"||h=="Status") return;
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
 
 if(colIndex==0){
 html+="<td>Total</td>";
 }else{
-if(h=="Qty Received") html+="<td></td>"; // ❌ REMOVE QTY TOTAL
-else html+="<td>"+(totals[i]||"")+"</td>";
+html+="<td>"+(totals[i]||"")+"</td>";
 }
 colIndex++;
 });
@@ -211,8 +94,7 @@ document.querySelector("tfoot").innerHTML=html;
 function generateKPIs(totals){
 let html="";
 headers.forEach((h,i)=>{
-if(h=="Rate"||h=="Amount"||h=="Status") return;
-if(h=="Qty Received") return; // ❌ REMOVE KPI
+if(["Rate","Amount","Status","Qty Received","Qty Received Date"].includes(h)) return;
 
 if(totals[i]){
 html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
@@ -248,6 +130,3 @@ a.download="Gee_Impex_Data.xls";
 a.click();
 }
 </script>
-
-</body>
-</html>
