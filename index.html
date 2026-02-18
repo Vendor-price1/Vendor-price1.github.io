@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Gee Impex Salary Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
@@ -27,12 +26,8 @@ font-weight:600;
 padding:15px;
 }
 
-.top-controls{
+.controls{
 margin-bottom:15px;
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-align-items:center;
 }
 
 button{
@@ -42,9 +37,10 @@ color:#fff;
 border:none;
 border-radius:6px;
 cursor:pointer;
+margin-right:5px;
 }
 
-input[type="text"]{
+input{
 padding:6px;
 border:1px solid #ccc;
 border-radius:6px;
@@ -56,6 +52,8 @@ color:#fff;
 padding:8px 15px;
 border-radius:6px;
 font-weight:bold;
+display:inline-block;
+margin-left:10px;
 }
 
 table{
@@ -68,6 +66,7 @@ th,td{
 border:1px solid #ddd;
 padding:8px;
 text-align:center;
+font-size:13px;
 }
 
 th{
@@ -100,14 +99,15 @@ Gee Impex Salary Dashboard
 
 <div class="container">
 
-<div class="top-controls">
+<div class="controls">
 <input type="text" id="searchInput" placeholder="Search...">
-<button onclick="resetSelection()">Reset Selection</button>
-<button onclick="exportSelected()">Export Selected</button>
-<button onclick="printSelected()">Print Selected</button>
-<div class="total-box">
-Total Selected Amount: ₹ <span id="totalAmount">0</span>
-</div>
+<button onclick="resetSelection()">Reset</button>
+<button onclick="exportSelected()">Export</button>
+<button onclick="printSelected()">Print</button>
+
+<span class="total-box">
+Total Selected: ₹ <span id="totalAmount">0</span>
+</span>
 </div>
 
 <table id="dataTable"></table>
@@ -116,14 +116,15 @@ Total Selected Amount: ₹ <span id="totalAmount">0</span>
 
 <script>
 
-const sheetURL="PASTE_YOUR_GOOGLE_SHEET_CSV_LINK_HERE";
+const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 let originalData=[];
 let filteredData=[];
 let headers=[];
 let selectedRows=new Set();
+let amountColumn="";
 
-function loadData(){
+/* LOAD DATA */
 Papa.parse(sheetURL,{
 download:true,
 header:true,
@@ -134,12 +135,15 @@ originalData=results.data.filter(r=>Object.values(r).some(v=>v));
 filteredData=[...originalData];
 headers=Object.keys(originalData[0]);
 
+// Find amount column automatically
+amountColumn=headers.find(h=>
+h.toLowerCase().includes("amount") ||
+h.toLowerCase().includes("salary")
+);
+
 renderTable();
 }
 });
-}
-
-loadData();
 
 /* TABLE RENDER */
 function renderTable(){
@@ -148,27 +152,23 @@ let table=document.getElementById("dataTable");
 table.innerHTML="";
 
 let thead="<tr><th>Select</th>";
-headers.forEach(h=>{
-thead+=`<th>${h}</th>`;
-});
+headers.forEach(h=>thead+=`<th>${h}</th>`);
 thead+="<th>Remark</th></tr>";
 table.innerHTML=thead;
 
 filteredData.forEach((row,index)=>{
+
+let checked=selectedRows.has(index)?"checked":"";
+
 let tr="<tr>";
-
-let checked=selectedRows.has(index) ? "checked" : "";
-
 tr+=`<td><input type="checkbox" ${checked} onchange="toggleSelect(${index})"></td>`;
 
 headers.forEach(h=>{
 tr+=`<td>${row[h] ?? ""}</td>`;
 });
 
-let remark=selectedRows.has(index) ? "Salary Done" : "";
-
-tr+=`<td class="remark">${remark}</td>`;
-tr+="</tr>";
+let remark=selectedRows.has(index)?"Salary Done":"";
+tr+=`<td class="remark">${remark}</td></tr>`;
 
 table.innerHTML+=tr;
 });
@@ -178,13 +178,11 @@ updateTotal();
 
 /* SELECT */
 function toggleSelect(index){
-
 if(selectedRows.has(index)){
 selectedRows.delete(index);
 }else{
 selectedRows.add(index);
 }
-
 renderTable();
 }
 
@@ -193,17 +191,27 @@ function updateTotal(){
 
 let total=0;
 
-selectedRows.forEach(i=>{
-let row=filteredData[i];
-let amountColumn=headers.find(h=>h.toLowerCase().includes("amount") || h.toLowerCase().includes("salary"));
 if(amountColumn){
-let val=parseFloat(row[amountColumn]);
+selectedRows.forEach(i=>{
+let val=parseFloat(filteredData[i][amountColumn]);
 if(!isNaN(val)) total+=val;
-}
 });
+}
 
 document.getElementById("totalAmount").innerText=total;
 }
+
+/* SEARCH */
+document.getElementById("searchInput").addEventListener("input",function(){
+let val=this.value.toLowerCase();
+filteredData=originalData.filter(row=>{
+return headers.some(h=>
+String(row[h] ?? "").toLowerCase().includes(val)
+);
+});
+selectedRows.clear();
+renderTable();
+});
 
 /* RESET */
 function resetSelection(){
@@ -211,26 +219,13 @@ selectedRows.clear();
 renderTable();
 }
 
-/* SEARCH */
-document.getElementById("searchInput").addEventListener("input",function(){
-let val=this.value.toLowerCase();
-filteredData=originalData.filter(row=>{
-return headers.some(h=>String(row[h] ?? "").toLowerCase().includes(val));
-});
-selectedRows.clear();
-renderTable();
-});
-
 /* EXPORT */
 function exportSelected(){
 
-let amountColumn=headers.find(h=>h.toLowerCase().includes("amount") || h.toLowerCase().includes("salary"));
-
-let csv="Select,"+headers.join(",")+",Remark\n";
+let csv=headers.join(",")+",Remark\n";
 
 selectedRows.forEach(i=>{
 let row=filteredData[i];
-csv+="Yes,";
 csv+=headers.map(h=>`"${row[h] ?? ""}"`).join(",");
 csv+=',"Salary Done"\n';
 });
@@ -245,7 +240,7 @@ a.click();
 /* PRINT */
 function printSelected(){
 
-let printWindow=window.open("","","width=900,height=700");
+let win=window.open("","","width=900,height=700");
 
 let html="<h2>Salary Report</h2>";
 html+="<table border='1' cellpadding='5' cellspacing='0'>";
@@ -263,9 +258,9 @@ html+="<td>Salary Done</td></tr>";
 
 html+="</table>";
 
-printWindow.document.write(html);
-printWindow.document.close();
-printWindow.print();
+win.document.write(html);
+win.document.close();
+win.print();
 }
 
 </script>
