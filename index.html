@@ -5,7 +5,7 @@
 
 <style>
 body{
-font-family: "Segoe UI", Arial;
+font-family:"Segoe UI",Arial;
 background:#0f172a;
 padding:15px;
 }
@@ -17,7 +17,7 @@ text-align:center;
 margin-bottom:8px;
 }
 
-/* DASHBOARD */
+/* DASHBOARD BOX */
 #dashboard{
 background:#f8fafc;
 padding:12px;
@@ -25,7 +25,7 @@ border-radius:12px;
 box-shadow:0 8px 25px rgba(0,0,0,.4);
 }
 
-/* BUTTON BAR */
+/* TOOLBAR */
 .toolbar{
 margin-bottom:8px;
 display:flex;
@@ -80,11 +80,11 @@ padding:6px;
 font-size:13px;
 }
 
-/* ALIGNMENT */
+/* ALIGN */
 .text-left{ text-align:left; font-weight:500; }
 .num{ text-align:center; }
 
-/* STRIPED ROWS */
+/* STRIPE */
 tbody tr:nth-child(even){background:#f3f4f6;}
 tbody tr:hover{background:#dbeafe;}
 
@@ -95,6 +95,24 @@ color:#fff;
 font-weight:bold;
 border:1px solid #1f2937;
 font-size:14px;
+}
+
+/* FOOTER */
+footer{
+margin-top:10px;
+text-align:center;
+color:white;
+font-size:12px;
+}
+
+/* PRINT STYLE */
+@media print{
+body{background:white;}
+h2{color:black;}
+button,input{display:none;}
+table,th,td{
+border:1px solid black !important;
+}
 }
 </style>
 </head>
@@ -120,8 +138,10 @@ font-size:14px;
 
 </div>
 
+<footer>Created by: Vijay Pandey</footer>
+
 <script>
-// GOOGLE SHEET CSV LINK
+// GOOGLE SHEET LINK
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 let headers=[], allRows=[], originalRows=[];
@@ -135,7 +155,7 @@ allRows=[...originalRows];
 buildTable();
 });
 
-// BUILD TABLE
+// BUILD HEADER
 function buildTable(){
 let thead="<tr>";
 headers.forEach(h=>thead+="<th>"+h+"</th>");
@@ -144,7 +164,7 @@ document.querySelector("thead").innerHTML=thead;
 renderRows(allRows);
 }
 
-// RENDER ROWS
+// RENDER DATA
 function renderRows(rows){
 let tbody="";
 rows.forEach(r=>{
@@ -163,9 +183,10 @@ document.querySelector("tbody").innerHTML=tbody;
 calculateTotals(rows);
 }
 
-// TOTALS
+// TOTALS CALCULATION
 function calculateTotals(rows){
 let totals=new Array(headers.length).fill(0);
+
 rows.forEach(r=>{
 r.forEach((c,i)=>{
 let v=parseFloat(c);
@@ -175,14 +196,23 @@ if(!isNaN(v)) totals[i]+=v;
 
 let html="<tr>";
 headers.forEach((h,i)=>{
-if(i==0) html+="<td class='text-left'>TOTAL</td>";
-else html+=`<td class='num'>${totals[i]||""}</td>`;
+if(i==0){
+html+="<td class='text-left'>TOTAL</td>";
+}
+// ❌ Qty Received Date TOTAL BLANK
+else if(h.trim()=="Qty Received Date"){
+html+="<td></td>";
+}
+else{
+html+=`<td class='num'>${totals[i]||""}</td>`;
+}
 });
 html+="</tr>";
+
 document.querySelector("tfoot").innerHTML=html;
 }
 
-// SEARCH FUNCTION
+// SEARCH FIX
 function searchTable(){
 let v=searchInput.value.toLowerCase();
 if(v===""){
@@ -193,18 +223,42 @@ allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
 renderRows(allRows);
 }
 
-// PRINT FUNCTION
+// PRINT
 function printTable(){
 let w=window.open("");
-w.document.write("<h2>Gee Impex Production Report</h2>");
-w.document.write(document.getElementById("dataTable").outerHTML);
+w.document.write(`
+<html>
+<head>
+<title>Gee Impex Production Report</title>
+<style>
+table{width:100%;border-collapse:collapse;}
+th,td{border:1px solid black;padding:6px;font-size:12px;}
+th{background:#eee;}
+</style>
+</head>
+<body>
+<h2>Gee Impex Production Report</h2>
+${document.getElementById("dataTable").outerHTML}
+</body></html>
+`);
 w.print();
 }
 
 // EXPORT EXCEL
 function exportExcel(){
 let table=document.getElementById("dataTable").outerHTML;
-let blob=new Blob([table],{type:"application/vnd.ms-excel"});
+let blob=new Blob([`
+<html>
+<head>
+<style>
+table{border-collapse:collapse;}
+td,th{border:1px solid black;padding:5px;}
+</style>
+</head>
+<body>${table}</body>
+</html>
+`],{type:"application/vnd.ms-excel"});
+
 let a=document.createElement("a");
 a.href=URL.createObjectURL(blob);
 a.download="Gee_Impex_Report.xls";
