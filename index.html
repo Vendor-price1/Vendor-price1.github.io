@@ -3,239 +3,230 @@
 <head>
 <meta charset="UTF-8">
 <title>Gee Impex Production Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#f4f6f9;}
-.header{background:#000;color:#fff;padding:15px;text-align:center;font-size:22px;font-weight:600;}
-.container{padding:15px;}
-.controls{margin-bottom:15px;}
-button{padding:6px 12px;background:#111827;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:5px;}
-input{padding:6px;border:1px solid #ccc;border-radius:6px;}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:15px;}
-.card{background:#2563eb;color:#fff;padding:10px;border-radius:8px;text-align:center;font-weight:bold;}
-table{border-collapse:collapse;width:100%;background:#fff;}
-th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:13px;}
-th{background:#000;color:#fff;}
-tr:nth-child(even){background:#f9f9f9;}
-.remark{color:#dc2626;font-weight:bold;}
-tfoot{background:#e5e7eb;font-weight:bold;}
-@media print{button,input{display:none;}}
+body{
+    font-family: Arial;
+    background:#f4f6f9;
+    margin:20px;
+}
+
+h2{
+    text-align:center;
+}
+
+.controls{
+    margin-bottom:15px;
+    text-align:center;
+}
+
+button{
+    padding:8px 15px;
+    margin:5px;
+    background:#2f60d3;
+    color:white;
+    border:none;
+    cursor:pointer;
+    border-radius:4px;
+}
+
+.kpi-container{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.kpi{
+    flex:1 1 150px;
+    background:#2f60d3;
+    color:white;
+    padding:10px;
+    border-radius:8px;
+    text-align:center;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th{
+    background:black;
+    color:white;
+    padding:8px;
+    font-size:13px;
+}
+
+td{
+    padding:6px;
+    text-align:center;
+    border:1px solid #ccc;
+}
+
+tfoot td{
+    font-weight:bold;
+    background:#eee;
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-Gee Impex Production Dashboard
-</div>
-
-<div class="container">
+<h2>Gee Impex Production Dashboard</h2>
 
 <div class="controls">
-<input type="text" id="searchInput" placeholder="Search...">
-<button onclick="exportExcel()">Export Excel</button>
-<button onclick="printSelected()">Print</button>
+    <button onclick="printReport()">Print</button>
+    <button onclick="exportExcel()">Export Excel</button>
 </div>
 
-<div class="cards" id="totalCards"></div>
-<table id="dataTable"></table>
+<div class="kpi-container" id="kpiContainer"></div>
 
-</div>
+<table id="dataTable">
+<thead></thead>
+<tbody></tbody>
+<tfoot></tfoot>
+</table>
 
 <script>
 
-const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let originalData=[];
-let filteredData=[];
+let fullData=[];
 let headers=[];
-let lockedRows=new Set(JSON.parse(localStorage.getItem("lockedRows")||"[]"));
-let numericColumns=[];
+let lockedRows = JSON.parse(localStorage.getItem("lockedRows") || "{}");
 
-Papa.parse(sheetURL,{
-download:true,
-header:true,
-skipEmptyLines:true,
-complete:function(results){
-
-originalData=results.data.filter(r=>Object.values(r).some(v=>v));
-filteredData=[...originalData];
-headers=Object.keys(originalData[0]);
-
-numericColumns=headers.filter(h=>{
-if(h.trim()=="34Qty Received Date") return false;
-return originalData.some(r=>!isNaN(parseFloat(r[h])));
+fetch(sheetURL)
+.then(res=>res.text())
+.then(csv=>{
+    const rows = csv.split("\n").map(r=>r.split(","));
+    headers = rows[0];
+    fullData = rows.slice(1);
+    renderTable(fullData);
+    renderKPI(fullData);
 });
 
-renderTable();
-}
-});
-
-function renderTable(){
-
-let table=document.getElementById("dataTable");
-table.innerHTML="";
+function renderTable(data){
 
 let thead="<tr><th>Select</th>";
-headers.forEach(h=>thead+=`<th>${h}</th>`);
-thead+="<th>Remark</th></tr>";
-table.innerHTML=thead;
+headers.forEach(h=>thead+="<th>"+h+"</th>");
+thead+="</tr>";
+document.querySelector("#dataTable thead").innerHTML=thead;
 
-filteredData.forEach((row,index)=>{
+let tbody="";
+data.forEach((row,i)=>{
 
-let checked=lockedRows.has(index)?"checked":"";
-let tr="<tr>";
-tr+=`<td><input type="checkbox" ${checked} onchange="toggleLock(${index})"></td>`;
+let locked = lockedRows[i] ? "disabled" : "";
 
-headers.forEach(h=>tr+=`<td>${row[h] ?? ""}</td>`);
+tbody+="<tr>";
+tbody+=`<td><input type="checkbox" ${locked} onchange="lockRow(${i},this)"></td>`;
+row.forEach(cell=> tbody+="<td>"+cell+"</td>");
+tbody+="</tr>";
+});
+document.querySelector("#dataTable tbody").innerHTML=tbody;
 
-let remark=lockedRows.has(index)?"Salary Done":"";
-tr+=`<td class="remark">${remark}</td></tr>`;
+renderTotal(data);
+}
 
-table.innerHTML+=tr;
+function renderTotal(data){
+
+let numericIndex = headers.map((h,i)=>isNumericColumn(i,data)?i:null).filter(v=>v!==null);
+
+let trow="<tr><td>Total</td>";
+
+headers.forEach((h,i)=>{
+
+// REMOVE total for Qty Received Date & Rate
+if(h.trim()=="Qty Received Date" || h.trim()=="Rate"){
+    trow+="<td></td>";
+}
+else if(numericIndex.includes(i)){
+    let total = data.reduce((sum,row)=> sum + Number(row[i]||0),0);
+    trow+="<td>"+total+"</td>";
+}
+else{
+    trow+="<td></td>";
+}
+
 });
 
-renderTotals();
+trow+="</tr>";
+
+document.querySelector("#dataTable tfoot").innerHTML=trow;
 }
 
-function toggleLock(index){
+function renderKPI(data){
 
-let pass=prompt("Enter Password:");
-if(pass!=="123"){
-alert("Wrong Password!");
-renderTable();
-return;
-}
-
-if(lockedRows.has(index)){
-lockedRows.delete(index);
-}else{
-lockedRows.add(index);
-}
-
-localStorage.setItem("lockedRows",JSON.stringify([...lockedRows]));
-renderTable();
-}
-
-function renderTotals(){
-
-let container=document.getElementById("totalCards");
+let container=document.getElementById("kpiContainer");
 container.innerHTML="";
 
-numericColumns.forEach(col=>{
+headers.forEach((h,i)=>{
 
-let total=0;
-filteredData.forEach(r=>{
-let val=parseFloat(r[col]);
-if(!isNaN(val)) total+=val;
-});
+if(isNumericColumn(i,data) && h.trim()!="Qty Received Date" && h.trim()!="Rate"){
 
-let div=document.createElement("div");
-div.className="card";
-div.innerHTML=`${col}<br>${total}`;
-container.appendChild(div);
-});
+let total=data.reduce((sum,row)=>sum+Number(row[i]||0),0);
 
-renderFooterTotals();
+container.innerHTML+=`
+<div class="kpi">
+<div>${h}</div>
+<div>${total}</div>
+</div>
+`;
+
 }
 
-function renderFooterTotals(){
-
-let table=document.getElementById("dataTable");
-let tfoot="<tfoot><tr><td>Total</td>";
-
-headers.forEach(col=>{
-if(numericColumns.includes(col)){
-let total=0;
-filteredData.forEach(r=>{
-let val=parseFloat(r[col]);
-if(!isNaN(val)) total+=val;
 });
-tfoot+=`<td>${total}</td>`;
+}
+
+function isNumericColumn(index,data){
+return data.every(row=>!isNaN(row[index]) && row[index]!="");
+}
+
+function lockRow(index,checkbox){
+
+if(checkbox.checked){
+
+let pass = prompt("Enter Password to Lock Row:");
+if(pass==="123"){
+lockedRows[index]=true;
+localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
+renderTable(fullData);
+}
+else{
+alert("Wrong Password");
+checkbox.checked=false;
+}
+
 }else{
-tfoot+="<td></td>";
-}
-});
 
-tfoot+="<td></td></tr></tfoot>";
-table.innerHTML+=tfoot;
+let pass = prompt("Enter Password to Unlock Row:");
+if(pass==="123"){
+delete lockedRows[index];
+localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
+renderTable(fullData);
+}
+else{
+alert("Wrong Password");
+checkbox.checked=true;
 }
 
-document.getElementById("searchInput").addEventListener("input",function(){
-let val=this.value.toLowerCase();
-filteredData=originalData.filter(row=>{
-return headers.some(h=>String(row[h]??"").toLowerCase().includes(val));
-});
-renderTable();
-});
+}
+
+}
+
+function printReport(){
+window.print();
+}
 
 function exportExcel(){
 
-let exportData=[];
+let table = document.getElementById("dataTable");
+let wb = XLSX.utils.table_to_book(table,{sheet:"Sheet1"});
+XLSX.writeFile(wb,"Gee_Impex_Production.xlsx");
 
-filteredData.forEach((row,index)=>{
-if(lockedRows.has(index)){
-let newRow={...row,Remark:"Salary Done"};
-exportData.push(newRow);
-}
-});
-
-if(exportData.length===0){
-alert("No Salary Done rows selected");
-return;
-}
-
-let ws=XLSX.utils.json_to_sheet(exportData);
-let wb=XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb,ws,"Salary Report");
-XLSX.writeFile(wb,"Gee_Impex_Production_Report.xlsx");
-}
-
-function printSelected(){
-
-let win=window.open("","","width=900,height=700");
-
-let html="<h2>Gee Impex Production Report</h2>";
-html+="<table border='1' cellpadding='5' cellspacing='0'>";
-html+="<tr>";
-
-headers.forEach(h=>html+=`<th>${h}</th>`);
-html+="<th>Remark</th></tr>";
-
-let totals={};
-numericColumns.forEach(col=>totals[col]=0);
-
-filteredData.forEach((row,index)=>{
-if(lockedRows.has(index)){
-html+="<tr>";
-headers.forEach(h=>{
-html+=`<td>${row[h] ?? ""}</td>`;
-if(numericColumns.includes(h)){
-let val=parseFloat(row[h]);
-if(!isNaN(val)) totals[h]+=val;
-}
-});
-html+="<td>Salary Done</td></tr>";
-}
-});
-
-html+="<tr>";
-headers.forEach(h=>{
-if(numericColumns.includes(h)){
-html+=`<td>${totals[h]}</td>`;
-}else{
-html+="<td></td>";
-}
-});
-html+="<td>Total</td></tr>";
-
-html+="</table>";
-win.document.write(html);
-win.document.close();
-win.print();
 }
 
 </script>
