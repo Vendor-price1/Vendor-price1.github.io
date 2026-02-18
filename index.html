@@ -20,11 +20,16 @@ display:flex;align-items:center;justify-content:center;
 z-index:9999;
 }
 .login-card{
-background:#111827;padding:30px;border-radius:10px;width:300px;
-box-shadow:0 0 20px black;text-align:center;
+background:#111827;padding:30px;border-radius:10px;width:320px;
+box-shadow:0 0 25px black;text-align:center;
 }
-.login-card input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;}
-.login-card button{width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
+.login-card input{
+width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;
+}
+.login-card button{
+width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;
+font-weight:bold;cursor:pointer;
+}
 .login-card h2{color:#38bdf8;}
 
 /* DASHBOARD */
@@ -41,17 +46,47 @@ padding:6px;width:200px;border-radius:4px;border:none;
 }
 
 /* TABLE */
-table{border-collapse:collapse;width:100%;background:white;color:black;border-radius:8px;overflow:hidden;}
-th,td{border:1px solid #ccc;padding:6px;text-align:center;}
-th{background:#111827;color:white;}
-tfoot{background:#e5e7eb;font-weight:bold;}
-.locked{background:#d3d3d3 !important;}
+table{
+border-collapse:collapse;
+width:100%;
+background:white;
+color:black;
+border-radius:8px;
+overflow:hidden;
+}
+th,td{
+border:1px solid #ccc;
+padding:6px;
+text-align:center;
+}
+th{
+background:#111827;
+color:white;
+}
+tfoot{
+background:#e5e7eb;
+font-weight:bold;
+}
+.locked{
+background:#c7f9cc !important;
+}
 
 /* KPI */
-.kpi-container{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;}
+.kpi-container{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:15px;
+}
 .kpi{
-background:#16a34a;color:white;padding:10px;border-radius:6px;min-width:120px;
-text-align:center;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.4);
+background:#16a34a;
+color:white;
+padding:10px;
+border-radius:6px;
+min-width:120px;
+text-align:center;
+font-weight:bold;
+box-shadow:0 2px 8px rgba(0,0,0,0.4);
 }
 </style>
 </head>
@@ -108,7 +143,7 @@ loginMsg.innerText="Wrong ID or Password!";
 // ================= GOOGLE SHEET API =================
 const API_URL="https://script.google.com/macros/s/AKfycbx3zgoMyJs6vXc9PQR0hHW27Hl2mhR_KI50sSBTqhpEucXKC2zU6Tj2ulGMEzNURm2Fxw/exec";
 
-// ================= SHEET DATA =================
+// ================= GOOGLE SHEET CSV =================
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 const LOCK_PASSWORD="123";
@@ -117,6 +152,7 @@ const UNLOCK_PASSWORD="321";
 let lockedRows=JSON.parse(localStorage.getItem("lockedRows"))||{};
 let headers=[];
 
+// ================= LOAD DASHBOARD =================
 function loadDashboard(){
 fetch(sheetURL).then(r=>r.text()).then(data=>{
 let rows=data.split("\n").map(r=>r.split(","));
@@ -136,7 +172,10 @@ let rowId=index;
 tbody+=`<tr id="row${rowId}" class="${lockedRows[rowId]?"locked":""}">
 <td><input type="checkbox" ${lockedRows[rowId]?"checked":""} onchange="handleCheckbox(this,${rowId})"></td>`;
 
-row.forEach(cell=>tbody+="<td>"+cell+"</td>");
+row.forEach((cell,i)=>{
+tbody+=`<td class="cell${i}">${cell}</td>`;
+});
+
 tbody+=`<td><button onclick="unlockRow(${rowId})">Unlock</button></td></tr>`;
 });
 
@@ -146,13 +185,59 @@ updateTotals();
 }
 
 // ================= UPDATE GOOGLE SHEET =================
-function updateSheet(rowId, action){
+function updateSheet(rowId,status){
 fetch(API_URL,{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({row:rowId, action:action})
-})
-.then(r=>r.text()).then(r=>console.log("Sheet Updated:",r));
+body:JSON.stringify({row:rowId,status:status})
+});
+}
+
+// ================= CHECKBOX LOCK SYSTEM =================
+function handleCheckbox(cb,rowId){
+
+let row=document.getElementById("row"+rowId);
+let statusCol=headers.indexOf("Status");
+
+if(cb.checked){
+let pass=prompt("Lock Password (123)");
+if(pass!==LOCK_PASSWORD){cb.checked=false;return;}
+
+lockedRows[rowId]=true;
+localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
+row.classList.add("locked");
+
+// DASHBOARD STATUS
+if(statusCol!=-1){
+row.querySelector(".cell"+statusCol).innerText="DONE";
+}
+
+// GOOGLE SHEET STATUS
+updateSheet(rowId,"DONE");
+
+}else{
+// UNCHECK = REMOVE
+delete lockedRows[rowId];
+localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
+row.classList.remove("locked");
+
+if(statusCol!=-1){
+row.querySelector(".cell"+statusCol).innerText="";
+}
+
+updateSheet(rowId,"");
+}
+}
+
+// ================= UNLOCK BUTTON =================
+function unlockRow(rowId){
+let pass=prompt("Unlock Password (321)");
+if(pass!==UNLOCK_PASSWORD) return;
+
+delete lockedRows[rowId];
+localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
+updateSheet(rowId,"");
+location.reload();
 }
 
 // ================= TOTALS =================
@@ -189,45 +274,6 @@ if(totals[i]) html+=`<div class="kpi">${h}<br>${totals[i]}</div>`;
 kpis.innerHTML=html;
 }
 
-// ================= LOCK =================
-function handleCheckbox(cb,rowId){
-if(lockedRows[rowId]){
-alert("Already Locked");
-cb.checked=true;
-return;
-}
-if(cb.checked){
-let pass=prompt("Lock Password (123)");
-if(pass===LOCK_PASSWORD){
-lockedRows[rowId]=true;
-localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
-document.getElementById("row"+rowId).classList.add("locked");
-
-// 🔥 GOOGLE SHEET
-updateSheet(rowId,"lock");
-
-}else{
-alert("Wrong Password");
-cb.checked=false;
-}
-}
-}
-
-// ================= UNLOCK =================
-function unlockRow(rowId){
-if(!lockedRows[rowId]){alert("Not Locked");return;}
-let pass=prompt("Unlock Password (321)");
-if(pass===UNLOCK_PASSWORD){
-delete lockedRows[rowId];
-localStorage.setItem("lockedRows",JSON.stringify(lockedRows));
-
-// 🔥 GOOGLE SHEET
-updateSheet(rowId,"unlock");
-
-location.reload();
-}
-}
-
 // ================= SEARCH =================
 function searchTable(){
 let v=searchInput.value.toLowerCase();
@@ -237,7 +283,7 @@ r.style.display=r.innerText.toLowerCase().includes(v)?"":"none";
 updateTotals();
 }
 
-// ================= PRINT =================
+// ================= PRINT SELECTED =================
 function printSelected(){
 let selected=document.querySelectorAll("tbody input:checked");
 if(!selected.length){alert("Select Rows");return;}
@@ -269,7 +315,7 @@ w.document.write("<h2>Gee Impex Salary Report</h2>"+html);
 w.print();
 }
 
-// ================= EXPORT =================
+// ================= EXPORT EXCEL =================
 function exportExcel(){
 let table=document.getElementById("dataTable").outerHTML;
 let blob=new Blob([table],{type:"application/vnd.ms-excel"});
