@@ -105,11 +105,29 @@ color:white;
 font-size:12px;
 }
 
+/* PAGINATION */
+#pagination{
+margin-top:8px;
+text-align:center;
+}
+#pagination button{
+padding:4px 8px;
+margin:2px;
+border:none;
+background:#374151;
+color:white;
+border-radius:4px;
+cursor:pointer;
+}
+#pagination button.active{
+background:#2563eb;
+}
+
 /* PRINT STYLE */
 @media print{
 body{background:white;}
 h2{color:black;}
-button,input{display:none;}
+button,input,#pagination{display:none;}
 table,th,td{
 border:1px solid black !important;
 }
@@ -136,6 +154,8 @@ border:1px solid black !important;
 <tfoot></tfoot>
 </table>
 
+<div id="pagination"></div>
+
 </div>
 
 <footer>Created by: Vijay Pandey</footer>
@@ -144,7 +164,9 @@ border:1px solid black !important;
 // GOOGLE SHEET LINK
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
-let headers=[], allRows=[], originalRows=[];
+let headers=[], originalRows=[], allRows=[];
+let currentPage=1;
+let rowsPerPage=25; // 25 rows per page
 
 // LOAD DATA
 fetch(sheetURL).then(r=>r.text()).then(data=>{
@@ -161,7 +183,17 @@ let thead="<tr>";
 headers.forEach(h=>thead+="<th>"+h+"</th>");
 thead+="</tr>";
 document.querySelector("thead").innerHTML=thead;
-renderRows(allRows);
+showPage(1);
+}
+
+// SHOW PAGE
+function showPage(page){
+currentPage=page;
+let start=(page-1)*rowsPerPage;
+let end=start+rowsPerPage;
+let pageRows=allRows.slice(start,end);
+renderRows(pageRows);
+createPagination();
 }
 
 // RENDER DATA
@@ -199,7 +231,6 @@ headers.forEach((h,i)=>{
 if(i==0){
 html+="<td class='text-left'>TOTAL</td>";
 }
-// ❌ Qty Received Date TOTAL BLANK
 else if(h.trim()=="Qty Received Date"){
 html+="<td></td>";
 }
@@ -212,7 +243,17 @@ html+="</tr>";
 document.querySelector("tfoot").innerHTML=html;
 }
 
-// SEARCH FIX
+// PAGINATION BUTTONS
+function createPagination(){
+let totalPages=Math.ceil(allRows.length/rowsPerPage);
+let html="";
+for(let i=1;i<=totalPages;i++){
+html+=`<button class="${i==currentPage?'active':''}" onclick="showPage(${i})">${i}</button>`;
+}
+document.getElementById("pagination").innerHTML=html;
+}
+
+// SEARCH FIX (WITH PAGINATION)
 function searchTable(){
 let v=searchInput.value.toLowerCase();
 if(v===""){
@@ -220,7 +261,7 @@ allRows=[...originalRows];
 }else{
 allRows=originalRows.filter(r=>r.join(" ").toLowerCase().includes(v));
 }
-renderRows(allRows);
+showPage(1);
 }
 
 // PRINT
