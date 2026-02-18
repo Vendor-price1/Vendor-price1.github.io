@@ -41,73 +41,67 @@ font-weight:600;
 padding:15px;
 }
 
-/* ✅ Proper Table Format */
-table.dataTable {
+/* ✅ FIXED GRID TABLE */
+table.dataTable{
 width:100% !important;
 border-collapse:collapse !important;
+table-layout:fixed !important;
+}
+
+table.dataTable th,
+table.dataTable td{
+border:1px solid #dcdcdc;
+padding:8px;
+text-align:center;
+vertical-align:middle;
+overflow:hidden;
+text-overflow:ellipsis;
 }
 
 table.dataTable thead th{
 background:#000;
 color:#fff;
-text-align:center;
-padding:8px;
-border:1px solid #ddd;
-white-space:nowrap;
-}
-
-table.dataTable tbody td{
-padding:8px;
-border:1px solid #ddd;
-text-align:center;
-vertical-align:middle;
-white-space:nowrap;
 }
 
 table.dataTable tbody tr:nth-child(even){
-background:#f2f2f2;
+background:#f9f9f9;
 }
 
 table.dataTable tbody tr:hover{
-background:#e6f2ff;
+background:#eef6ff;
 }
 
 .text-right{
 text-align:right !important;
 }
 
+/* FILTER BELOW HEADER TEXT */
+.header-title{
+display:block;
+}
+
+.filter-container{
+margin-top:4px;
+}
+
 .filter-icon{
 cursor:pointer;
-margin-left:5px;
 color:#ffc107;
 font-size:12px;
 }
 
-.cards{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:12px;
-margin-bottom:20px;
+.top-controls{
+margin-bottom:15px;
 }
 
-.card{
-padding:14px;
-border-radius:10px;
+button{
+padding:6px 12px;
+background:#111827;
 color:#fff;
-text-align:center;
-font-weight:600;
-box-shadow:0 3px 8px rgba(0,0,0,0.2);
+border:none;
+border-radius:6px;
+cursor:pointer;
 }
-
-.card h4{margin:0;font-size:13px;}
-.card h2{margin:6px 0 0;font-size:18px;}
-
-.color0{background:#2563eb;}
-.color1{background:#16a34a;}
-.color2{background:#f97316;}
-.color3{background:#dc2626;}
-.color4{background:#7c3aed;}
-.color5{background:#111827;}
 
 .footer{
 background:#000;
@@ -128,9 +122,11 @@ Gee Impex Live Production Dashboard
 
 <div class="container">
 
-<div class="cards" id="cardsContainer"></div>
+<div class="top-controls">
+<button onclick="resetFilters()">Reset Filters</button>
+</div>
 
-<table id="dataTable" class="display nowrap"></table>
+<table id="dataTable" class="display"></table>
 
 </div>
 
@@ -143,7 +139,6 @@ Created by: Vijay Pandey
 const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa_ZgSALzAhr4Rb90KicCCihCF4Fm80c3_jx8873MFxQGcn7wmTACfiF4woe8Buje/pub?gid=0&single=true&output=csv";
 
 let table;
-let numericColumns=[];
 
 function loadData(){
 
@@ -158,16 +153,6 @@ if(data.length===0) return;
 
 let headers=Object.keys(data[0]);
 
-/* ✅ Remove Rate & Qty Received Date from KPI */
-numericColumns=headers.filter(h=>{
-let name=h.toLowerCase().trim();
-if(name==="rate") return false;
-if(name==="qty received date") return false;
-return data.some(r=>!isNaN(parseFloat(r[h])));
-});
-
-createCards(headers);
-
 if(table){
 table.destroy();
 $('#dataTable').empty();
@@ -176,29 +161,18 @@ $('#dataTable').empty();
 table=$('#dataTable').DataTable({
 data:data,
 scrollX:true,
+autoWidth:false,
 ordering:false,
-dom:'Bfrtip',
-buttons:[
-{
-extend:'excelHtml5',
-text:'Export to Excel',
-title:'Gee Impex Production Report'
-}
-],
-columns:headers.map(h=>{
-if(numericColumns.includes(h)){
-return {title:h,data:h,className:'text-right'};
-}
-return {title:h,data:h};
-})
+columns:headers.map(h=>({
+title:`<span class="header-title">${h}</span>
+        <div class="filter-container">
+        <span class="filter-icon">🔽</span>
+        </div>`,
+data:h
+}))
 });
 
 addFilters();
-updateCards(data);
-
-table.on('draw',function(){
-updateCards(table.rows({search:'applied'}).data().toArray());
-});
 
 }
 });
@@ -208,47 +182,23 @@ updateCards(table.rows({search:'applied'}).data().toArray());
 loadData();
 setInterval(loadData,60000);
 
-/* KPI */
-function createCards(headers){
-let container=document.getElementById("cardsContainer");
-container.innerHTML="";
-numericColumns.forEach((col,i)=>{
-let div=document.createElement("div");
-div.className="card color"+(i%6);
-div.innerHTML=`<h4>${col}</h4><h2 id="kpi_${col}">0</h2>`;
-container.appendChild(div);
-});
-}
-
-function updateCards(data){
-numericColumns.forEach(col=>{
-let total=0;
-data.forEach(r=>{
-let num=parseFloat(r[col]);
-if(!isNaN(num)) total+=num;
-});
-let el=document.getElementById("kpi_"+col);
-if(el) el.innerText=total;
-});
-}
-
-/* Filter */
+/* FILTER FUNCTION */
 function addFilters(){
-table.columns().every(function(){
-let column=this;
-let header=$(column.header());
-header.find('.filter-icon').remove();
 
-let icon=$('<span class="filter-icon">🔽</span>');
-header.append(icon);
+$('#dataTable thead th').each(function(index){
 
-icon.on('click',function(e){
+let column=table.column(index);
+let header=$(this);
+
+header.find('.filter-icon').off('click').on('click',function(e){
+
 e.stopPropagation();
 $('select.column-filter').remove();
 
-let select=$('<select multiple class="column-filter" style="width:150px;"></select>')
-.appendTo(header)
+let select=$('<select multiple class="column-filter" style="width:100%;margin-top:5px;"></select>')
+.appendTo(header.find('.filter-container'))
 .on('change',function(){
+
 let vals=$(this).val();
 let search=vals ? vals.join('|') : '';
 column.search(search,true,false).draw();
@@ -257,8 +207,17 @@ column.search(search,true,false).draw();
 column.data().unique().sort().each(function(d){
 select.append('<option value="'+d+'">'+d+'</option>');
 });
+
 });
+
 });
+
+}
+
+/* RESET */
+function resetFilters(){
+table.search('').columns().search('').draw();
+$('select.column-filter').remove();
 }
 
 </script>
