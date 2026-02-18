@@ -7,98 +7,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
 <style>
-body{
-margin:0;
-font-family:Segoe UI;
-background:#f4f6f9;
-}
-
-.header{
-background:#000;
-color:#fff;
-padding:15px;
-text-align:center;
-font-size:22px;
-font-weight:600;
-}
-
-.container{
-padding:15px;
-}
-
-.controls{
-margin-bottom:15px;
-}
-
-button{
-padding:6px 12px;
-background:#111827;
-color:#fff;
-border:none;
-border-radius:6px;
-cursor:pointer;
-margin-right:5px;
-}
-
-input{
-padding:6px;
-border:1px solid #ccc;
-border-radius:6px;
-}
-
-.cards{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-gap:10px;
-margin-bottom:15px;
-}
-
-.card{
-background:#2563eb;
-color:#fff;
-padding:10px;
-border-radius:8px;
-text-align:center;
-font-weight:bold;
-}
-
-table{
-border-collapse:collapse;
-width:100%;
-background:#fff;
-}
-
-th,td{
-border:1px solid #ddd;
-padding:8px;
-text-align:center;
-font-size:13px;
-}
-
-th{
-background:#000;
-color:#fff;
-}
-
-tr:nth-child(even){
-background:#f9f9f9;
-}
-
-.remark{
-color:#dc2626;
-font-weight:bold;
-}
-
-tfoot{
-background:#e5e7eb;
-font-weight:bold;
-}
-
-@media print{
-button,input{
-display:none;
-}
-}
+body{margin:0;font-family:Segoe UI;background:#f4f6f9;}
+.header{background:#000;color:#fff;padding:15px;text-align:center;font-size:22px;font-weight:600;}
+.container{padding:15px;}
+.controls{margin-bottom:15px;}
+button{padding:6px 12px;background:#111827;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:5px;}
+input{padding:6px;border:1px solid #ccc;border-radius:6px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:15px;}
+.card{background:#2563eb;color:#fff;padding:10px;border-radius:8px;text-align:center;font-weight:bold;}
+table{border-collapse:collapse;width:100%;background:#fff;}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:13px;}
+th{background:#000;color:#fff;}
+tr:nth-child(even){background:#f9f9f9;}
+.remark{color:#dc2626;font-weight:bold;}
+tfoot{background:#e5e7eb;font-weight:bold;}
+@media print{button,input{display:none;}}
 </style>
 </head>
 
@@ -112,13 +35,10 @@ Gee Impex Production Dashboard
 
 <div class="controls">
 <input type="text" id="searchInput" placeholder="Search...">
-<button onclick="resetSelection()">Reset</button>
-<button onclick="exportSelected()">Export</button>
 <button onclick="printSelected()">Print</button>
 </div>
 
 <div class="cards" id="totalCards"></div>
-
 <table id="dataTable"></table>
 
 </div>
@@ -130,11 +50,9 @@ const sheetURL="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVKYDXr85mWllfa
 let originalData=[];
 let filteredData=[];
 let headers=[];
-let selectedRows=new Set();
-let lockedRows=new Set();
+let lockedRows=new Set(JSON.parse(localStorage.getItem("lockedRows")||"[]"));
 let numericColumns=[];
 
-/* LOAD DATA */
 Papa.parse(sheetURL,{
 download:true,
 header:true,
@@ -146,6 +64,7 @@ filteredData=[...originalData];
 headers=Object.keys(originalData[0]);
 
 numericColumns=headers.filter(h=>{
+if(h.trim().toLowerCase()=="rate") return false;
 return originalData.some(r=>!isNaN(parseFloat(r[h])));
 });
 
@@ -153,7 +72,6 @@ renderTable();
 }
 });
 
-/* TABLE RENDER */
 function renderTable(){
 
 let table=document.getElementById("dataTable");
@@ -166,15 +84,11 @@ table.innerHTML=thead;
 
 filteredData.forEach((row,index)=>{
 
-let checked=selectedRows.has(index)?"checked":"";
 let disabled=lockedRows.has(index)?"disabled":"";
-
 let tr="<tr>";
-tr+=`<td><input type="checkbox" ${checked} ${disabled} onchange="toggleSelect(${index})"></td>`;
+tr+=`<td><input type="checkbox" ${disabled} onchange="toggleSelect(${index})"></td>`;
 
-headers.forEach(h=>{
-tr+=`<td>${row[h] ?? ""}</td>`;
-});
+headers.forEach(h=>tr+=`<td>${row[h] ?? ""}</td>`);
 
 let remark=lockedRows.has(index)?"Salary Done":"";
 tr+=`<td class="remark">${remark}</td></tr>`;
@@ -185,22 +99,21 @@ table.innerHTML+=tr;
 renderTotals();
 }
 
-/* SELECT */
 function toggleSelect(index){
 
 if(lockedRows.has(index)) return;
 
-if(selectedRows.has(index)){
-selectedRows.delete(index);
-}else{
-selectedRows.add(index);
-lockedRows.add(index);   // permanently lock
+let pass=prompt("Enter Password:");
+if(pass!=="123"){
+alert("Wrong Password!");
+return;
 }
 
+lockedRows.add(index);
+localStorage.setItem("lockedRows",JSON.stringify([...lockedRows]));
 renderTable();
 }
 
-/* TOTAL CARDS */
 function renderTotals(){
 
 let container=document.getElementById("totalCards");
@@ -209,7 +122,6 @@ container.innerHTML="";
 numericColumns.forEach(col=>{
 
 let total=0;
-
 filteredData.forEach(r=>{
 let val=parseFloat(r[col]);
 if(!isNaN(val)) total+=val;
@@ -224,11 +136,9 @@ container.appendChild(div);
 renderFooterTotals();
 }
 
-/* TABLE FOOTER TOTAL */
 function renderFooterTotals(){
 
 let table=document.getElementById("dataTable");
-
 let tfoot="<tfoot><tr><td>Total</td>";
 
 headers.forEach(col=>{
@@ -245,46 +155,17 @@ tfoot+="<td></td>";
 });
 
 tfoot+="<td></td></tr></tfoot>";
-
 table.innerHTML+=tfoot;
 }
 
-/* SEARCH */
 document.getElementById("searchInput").addEventListener("input",function(){
 let val=this.value.toLowerCase();
 filteredData=originalData.filter(row=>{
-return headers.some(h=>
-String(row[h] ?? "").toLowerCase().includes(val)
-);
+return headers.some(h=>String(row[h]??"").toLowerCase().includes(val));
 });
 renderTable();
 });
 
-/* RESET */
-function resetSelection(){
-selectedRows.clear();
-renderTable();
-}
-
-/* EXPORT */
-function exportSelected(){
-
-let csv=headers.join(",")+",Remark\n";
-
-lockedRows.forEach(i=>{
-let row=filteredData[i];
-csv+=headers.map(h=>`"${row[h] ?? ""}"`).join(",");
-csv+=',"Salary Done"\n';
-});
-
-let blob=new Blob([csv],{type:"text/csv"});
-let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="Production_Selected.csv";
-a.click();
-}
-
-/* PRINT */
 function printSelected(){
 
 let win=window.open("","","width=900,height=700");
@@ -324,7 +205,6 @@ html+="<td></td>";
 html+="<td>Total</td></tr>";
 
 html+="</table>";
-
 win.document.write(html);
 win.document.close();
 win.print();
