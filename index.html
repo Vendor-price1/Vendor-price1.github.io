@@ -23,14 +23,20 @@ z-index:9999;
 background:#111827;padding:30px;border-radius:10px;width:320px;
 box-shadow:0 0 25px black;text-align:center;
 }
-.login-card input{width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;}
-.login-card button{width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
+.login-card input{
+width:100%;padding:10px;margin:8px 0;border:none;border-radius:5px;
+}
+.login-card button{
+width:100%;padding:10px;background:#38bdf8;border:none;border-radius:5px;
+font-weight:bold;cursor:pointer;
+}
 .login-card h2{color:#38bdf8;}
 
 /* DASHBOARD */
 .dashboard{padding:15px;display:none;}
 h1{text-align:center;color:#38bdf8;}
 
+/* TABLE */
 table{
 border-collapse:collapse;
 width:100%;
@@ -44,8 +50,13 @@ border:1px solid #ccc;
 padding:6px;
 text-align:center;
 }
-th{background:#111827;color:white;}
-.locked{background:#c7f9cc !important;}
+th{
+background:#111827;
+color:white;
+}
+.locked{
+background:#c7f9cc !important;
+}
 </style>
 </head>
 
@@ -88,7 +99,7 @@ loginMsg.innerText="Wrong ID or Password!";
 }
 }
 
-// GOOGLE SCRIPT API
+// GOOGLE SCRIPT API (STATUS UPDATE)
 const API_URL="https://script.google.com/macros/s/AKfycbx3zgoMyJs6vXc9PQR0hHW27Hl2mhR_KI50sSBTqhpEucXKC2zU6Tj2ulGMEzNURm2Fxw/exec";
 
 // GOOGLE SHEET CSV
@@ -104,9 +115,9 @@ headers=rows[0];
 let bodyRows=rows.slice(1);
 
 // HEADER
-let thead="<tr><th>Select</th>";
+let thead="<tr>";
 headers.forEach(h=>{
-if(h=="Rate"||h=="Amount"||h=="Status") return; // REMOVE
+if(h=="Rate"||h=="Amount"||h=="Status") return; // REMOVE THESE
 thead+="<th>"+h+"</th>";
 });
 thead+="</tr>";
@@ -116,35 +127,19 @@ document.querySelector("thead").innerHTML=thead;
 let tbody="";
 bodyRows.forEach((row,index)=>{
 if(row.length<headers.length) return;
-tbody+=`<tr id="row${index}">
-<td><input type="checkbox" onchange="updateStatus(this,${index})"></td>`;
+tbody+=`<tr id="row${index}">`;
 
 row.forEach((cell,i)=>{
 let h=headers[i];
 if(h=="Rate"||h=="Amount"||h=="Status") return;
 tbody+=`<td>${cell}</td>`;
 });
+
 tbody+="</tr>";
 });
 
 document.querySelector("tbody").innerHTML=tbody;
 });
-}
-
-// UPDATE GOOGLE SHEET
-function updateStatus(cb,rowId){
-let status = cb.checked ? "DONE" : "";
-
-let row=document.getElementById("row"+rowId);
-if(cb.checked) row.classList.add("locked");
-else row.classList.remove("locked");
-
-fetch(API_URL,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({row:rowId,status:status})
-})
-.then(r=>r.text()).then(console.log);
 }
 </script>
 
